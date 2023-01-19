@@ -230,7 +230,7 @@ namespace Wagon_Tracker_Combined
 
                         break;
 
-                    case ConsoleKey.F:
+                    case ConsoleKey.D:
                         if (key.Modifiers == ConsoleModifiers.Control)
                         {
                             screen.Clear();
@@ -283,6 +283,21 @@ namespace Wagon_Tracker_Combined
                         }
                         break;
 
+                    case ConsoleKey.R:
+                        if (key.Modifiers == ConsoleModifiers.Control)
+                        {
+                            // Download all wagons again
+                            // i.e everything in allSelectedWagons
+
+                        }
+                        else if((key.Modifiers & ConsoleModifiers.Control) != 0 && (key.Modifiers & ConsoleModifiers.Shift) != 0)
+                        {
+                            // Download only those wagons currently shown
+                            // i.e. everything in data
+
+                        }
+                        break;
+                    
                     default:
 
                         break;
