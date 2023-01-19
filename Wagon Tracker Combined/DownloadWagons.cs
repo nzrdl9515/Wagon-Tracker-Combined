@@ -230,7 +230,7 @@ namespace Wagon_Tracker_Combined
 
                         break;
 
-                    case ConsoleKey.D:
+                    case ConsoleKey.F:
                         if (key.Modifiers == ConsoleModifiers.Control)
                         {
                             screen.Clear();
@@ -277,6 +277,9 @@ namespace Wagon_Tracker_Combined
                             }
 
                             screen.Clear();
+                            
+                            screen.Update(searchTerm.ToCharArray(), 3, 1);
+                            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 2);
                         }
                         break;
 
