@@ -36,7 +36,7 @@ namespace Wagon_Tracker_Combined
                 }
             }
 
-            downloadWagons(new List<string>(allWagonsData.Keys), ref allWagonsData);
+            downloadWagons(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
 
             // ************** I've gotten this far at the moment ********************
 
@@ -230,7 +230,7 @@ namespace Wagon_Tracker_Combined
             }
         }
 
-        private static void downloadWagons (List<string> wagons, ref Dictionary<string, string> allWagonsData)
+        private static void downloadWagons (List<string> wagons, ref Dictionary<string, string> allWagonsData, ref Screen screen)
         {
             WebClient[] clients = new WebClient[Program.NumClients];
             for (int j = 0; j < Program.NumClients; j++)
@@ -246,6 +246,9 @@ namespace Wagon_Tracker_Combined
             {
                 scrollPosition = data.Count - displayBox.Height;
             }*/
+
+            System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
+            sw.Start();
 
             for (int j = 0; j < wagons.Count; j += Program.NumClients)
             {
@@ -303,6 +306,14 @@ namespace Wagon_Tracker_Combined
                         }*/
                     }
                 }
+
+                TimeSpan timePerWagon = sw.Elapsed / (j + Program.NumClients);
+                TimeSpan estTimeRemaining = timePerWagon * (wagons.Count - j - Program.NumClients);
+
+                //screen.Update((sw.Elapsed.TotalMilliseconds))
+                //screen.Update((timePerWagon.TotalMilliseconds.ToString() + "         ").ToCharArray(), 3, 3);
+                screen.Update(string.Format("Wagons downloaded: {0}/{1}         ", j, wagons.Count).ToCharArray(), 3, 2);
+                screen.Update(("Time remaining: " + Math.Round(estTimeRemaining.TotalSeconds).ToString() + "s        ").ToCharArray(), 3, 3);
 
                 /*for (int j = 0; j < wagons.Length; j++)
                 {
