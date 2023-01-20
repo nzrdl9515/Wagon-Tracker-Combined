@@ -21,7 +21,24 @@ namespace Wagon_Tracker_Combined
             // Using the dictionary to store all of the data so that a new keyword can be used
             // Changing to list as there is no access to the specific wagon numbers later on, earier to loop through this way.
             //Dictionary<string, string> allSelectedWagons = new Dictionary<string, string>();
-            List<string> allSelectedWagons = new List<string>();
+
+            //List<string> allWagons = new List<string>();
+            List<string> selectedWagons = new List<string>();
+            Dictionary<string, string> allWagonsData = new Dictionary<string, string>();
+
+            for(int i = 0; i < wagonClasses.Count; i++)
+            {
+                foreach(string wagon in File.ReadAllLines("wagons/" + wagonClasses[i] + ".txt"))
+                {
+                    //allWagons.Add(wagon);
+
+                    allWagonsData.Add(wagon, "");
+                }
+            }
+
+            downloadWagons(new List<string>(allWagonsData.Keys), ref allWagonsData);
+
+            // ************** I've gotten this far at the moment ********************
 
             screen.Clear();
             screen.Update("Input search parameter".ToCharArray(), 3, 1);
@@ -64,115 +81,7 @@ namespace Wagon_Tracker_Combined
             screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 2);
             displayBox.PrintData(ref screen, true);
 
-            for (int i = 0; i < wagonClasses.Count; i++)
-            {
-                string[] wagons = File.ReadAllLines("wagons/" + wagonClasses[i] + ".txt");
-                //string[] results = new string[wagons.Length];
-                //const int numClients = 10;
-
-                WebClient[] clients = new WebClient[Program.NumClients];
-                for (int j = 0; j < Program.NumClients; j++)
-                {
-                    clients[j] = new WebClient();
-                }
-
-                data.Add(string.Format("Searching class {0} ({1}/{2})", wagonClasses[i], i + 1, wagonClasses.Count));
-
-                screen.Update(string.Format("Current search: {0} (0/{1})               ", wagonClasses[i], wagons.Length).ToCharArray(), 3, 3);
-
-                if (data.Count > displayBox.Height)
-                {
-                    scrollPosition = data.Count - displayBox.Height;
-                }
-
-                for (int j = 0; j < wagons.Length; j += Program.NumClients)
-                {
-                    Task<string>[] tasks = new Task<string>[Program.NumClients];
-
-                    for (int k = 0; k < Program.NumClients; k++)
-                    {
-                        if (j + k < wagons.Length)
-                        {
-                            tasks[k] = clients[k].DownloadStringTaskAsync(new Uri("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagons[j + k]));
-                        }
-                    }
-
-                    for (int k = 0; k < Program.NumClients; k++)
-                    {
-                        if (j + k < wagons.Length)
-                        {
-                            //results[j + k] = tasks[k].Result;
-
-                            string result;
-
-                            try
-                            {
-                                result = tasks[k].Result;
-                            }
-                            catch(Exception e)
-                            {
-                                result = e.Message;
-                            }
-
-                            allSelectedWagons.Add(/*wagons[j + k], */wagons[j + k] + " - " + result);
-
-                            if (keyword == "" || (result.Contains(keyword) || result.Contains(keyword.ToLower()) || result.Contains(keyword.ToUpper())))
-                            {
-                                data.Add(wagons[j + k] + " - " + result);
-
-                                if (data.Count > displayBox.Height)
-                                {
-                                    scrollPosition++;
-                                }
-                            }
-
-                            boxOutput = new List<string>();
-
-                            for (int l = 0; l < displayBox.Height; l++)
-                            {
-                                if (l + scrollPosition == data.Count)
-                                {
-                                    break;
-                                }
-
-                                boxOutput.Add(data[l + scrollPosition]);
-                            }
-                        }
-                    }
-
-                    /*for (int j = 0; j < wagons.Length; j++)
-                    {
-                        if (keyword == "" || (results[j].Contains(keyword) || results[j].Contains(keyword.ToLower()) || results[j].Contains(keyword.ToUpper())))
-                        {
-                            data.Add(wagons[j] + " - " + results[j]);
-
-                            if (data.Count > box.Height)
-                            {
-                                scrollPosition++;
-                            }
-                        }
-
-                        boxOutput = new List<string>();
-
-                        for (int k = 0; k < box.Height; k++)
-                        {
-                            if (k + scrollPosition == data.Count)
-                            {
-                                break;
-                            }
-
-                            boxOutput.Add(data[k + scrollPosition]);
-                        }
-                    }*/
-
-                    displayBox.UpdateData(boxOutput);
-                    displayBox.PrintData(ref screen, true);
-
-                    screen.Update(string.Format("Current search: {0} ({1}/{2})                 ", wagonClasses[i], j, wagons.Length).ToCharArray(), 3, 3);
-                }
-
-                screen.Update("                                              ".ToCharArray(), 3, 3);
-            }
+            /* This is where the downloader used to be */
 
             if (wagonClasses.Count < 5)
             {
@@ -257,9 +166,9 @@ namespace Wagon_Tracker_Combined
                             string lastClass = "";
                             int classCounter = 0;
 
-                            for(int i = 0; i < allSelectedWagons.Count; i++)
+                            /*for(int i = 0; i < allWagonsData.Count; i++)
                             {
-                                string nextClass = allSelectedWagons[i].Substring(0, allSelectedWagons[i].IndexOfAny("123456789".ToCharArray()));
+                                string nextClass = allWagonsData[i].Substring(0, allWagonsData[i].IndexOfAny("123456789".ToCharArray()));
 
                                 if(nextClass != lastClass)
                                 {
@@ -270,11 +179,11 @@ namespace Wagon_Tracker_Combined
                                     classCounter++;
                                 }
 
-                                if (keyword == "" || (allSelectedWagons[i].Contains(keyword) || allSelectedWagons[i].Contains(keyword.ToLower()) || allSelectedWagons[i].Contains(keyword.ToUpper())))
+                                if (keyword == "" || (allWagonsData[i].Contains(keyword) || allWagonsData[i].Contains(keyword.ToLower()) || allWagonsData[i].Contains(keyword.ToUpper())))
                                 {
-                                    data.Add(allSelectedWagons[i]);
+                                    data.Add(allWagonsData[i]);
                                 }
-                            }
+                            }*/
 
                             screen.Clear();
                             
@@ -319,6 +228,114 @@ namespace Wagon_Tracker_Combined
                 displayBox.UpdateData(boxOutput);
                 displayBox.PrintData(ref screen, true);
             }
+        }
+
+        private static void downloadWagons (List<string> wagons, ref Dictionary<string, string> allWagonsData)
+        {
+            WebClient[] clients = new WebClient[Program.NumClients];
+            for (int j = 0; j < Program.NumClients; j++)
+            {
+                clients[j] = new WebClient();
+            }
+
+            //data.Add(string.Format("Searching class {0} ({1}/{2})", wagonClasses[i], i + 1, wagonClasses.Count));
+
+            //screen.Update(string.Format("Current search: {0} (0/{1})               ", wagonClasses[i], wagons.Length).ToCharArray(), 3, 3);
+
+            /*if (data.Count > displayBox.Height)
+            {
+                scrollPosition = data.Count - displayBox.Height;
+            }*/
+
+            for (int j = 0; j < wagons.Count; j += Program.NumClients)
+            {
+                Task<string>[] tasks = new Task<string>[Program.NumClients];
+
+                for (int k = 0; k < Program.NumClients; k++)
+                {
+                    if (j + k < wagons.Count)
+                    {
+                        tasks[k] = clients[k].DownloadStringTaskAsync(new Uri("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagons[j + k]));
+                    }
+                }
+
+                for (int k = 0; k < Program.NumClients; k++)
+                {
+                    if (j + k < wagons.Count)
+                    {
+                        //results[j + k] = tasks[k].Result;
+
+                        string result;
+
+                        try
+                        {
+                            result = tasks[k].Result;
+                        }
+                        catch (Exception e)
+                        {
+                            result = e.Message;
+                        }
+
+                        allWagonsData[wagons[j + k]] = result;
+
+                        //allSelectedWagons.Add(/*wagons[j + k], */wagons[j + k] + " - " + result);
+
+                        /*if (keyword == "" || (result.Contains(keyword) || result.Contains(keyword.ToLower()) || result.Contains(keyword.ToUpper())))
+                        {
+                            data.Add(wagons[j + k] + " - " + result);
+
+                            if (data.Count > displayBox.Height)
+                            {
+                                scrollPosition++;
+                            }
+                        }
+
+                        boxOutput = new List<string>();
+
+                        for (int l = 0; l < displayBox.Height; l++)
+                        {
+                            if (l + scrollPosition == data.Count)
+                            {
+                                break;
+                            }
+
+                            boxOutput.Add(data[l + scrollPosition]);
+                        }*/
+                    }
+                }
+
+                /*for (int j = 0; j < wagons.Length; j++)
+                {
+                    if (keyword == "" || (results[j].Contains(keyword) || results[j].Contains(keyword.ToLower()) || results[j].Contains(keyword.ToUpper())))
+                    {
+                        data.Add(wagons[j] + " - " + results[j]);
+
+                        if (data.Count > box.Height)
+                        {
+                            scrollPosition++;
+                        }
+                    }
+
+                    boxOutput = new List<string>();
+
+                    for (int k = 0; k < box.Height; k++)
+                    {
+                        if (k + scrollPosition == data.Count)
+                        {
+                            break;
+                        }
+
+                        boxOutput.Add(data[k + scrollPosition]);
+                    }
+                }*/
+
+                //displayBox.UpdateData(boxOutput);
+                //displayBox.PrintData(ref screen, true);
+
+                //screen.Update(string.Format("Current search: {0} ({1}/{2})                 ", wagonClasses[i], j, wagons.Length).ToCharArray(), 3, 3);
+            }
+
+            //screen.Update("                                              ".ToCharArray(), 3, 3);
         }
     }
 }
