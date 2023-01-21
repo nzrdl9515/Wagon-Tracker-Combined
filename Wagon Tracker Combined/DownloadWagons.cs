@@ -27,7 +27,7 @@ namespace Wagon_Tracker_Combined
                 }
             }
 
-            downloadWagons(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
+            Download(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
 
             screen.Clear();
             screen.Update("Input search parameter".ToCharArray(), 3, 1);
@@ -145,7 +145,7 @@ namespace Wagon_Tracker_Combined
                             // Download all wagons again
                             // i.e everything in allSelectedWagons
 
-                            downloadWagons(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
+                            Download(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
 
                             data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
 
@@ -167,7 +167,7 @@ namespace Wagon_Tracker_Combined
                                 }
                             }
 
-                            downloadWagons(searchWagons, ref allWagonsData, ref screen);
+                            Download(searchWagons, ref allWagonsData, ref screen);
 
                             data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
 
@@ -230,8 +230,17 @@ namespace Wagon_Tracker_Combined
             return displayData;
         }
 
-        private static void downloadWagons (List<string> wagons, ref SortedList<string, string> allWagonsData, ref Screen screen)
+        public static void Download (List<string> wagons, ref SortedList<string, string> allWagonsData, ref Screen screen)
         {
+            // Not needed for anything referencing this overload
+            /*foreach(string wagon in wagons)
+            {
+                if (!allWagonsData.ContainsKey(wagon))
+                {
+                    allWagonsData.Add(wagon, "");
+                }
+            }*/
+
             // Set up multiple download clients
             WebClient[] clients = new WebClient[Program.NumClients];
             for (int j = 0; j < Program.NumClients; j++)
@@ -289,6 +298,59 @@ namespace Wagon_Tracker_Combined
             }
 
             sw.Stop();
+        }
+
+        public static void Download(List<string> wagons, ref SortedList<string, string> allWagonsData)
+        {
+            foreach (string wagon in wagons)
+            {
+                if (!allWagonsData.ContainsKey(wagon))
+                {
+                    allWagonsData.Add(wagon, "");
+                }
+            }
+
+            // Set up multiple download clients
+            WebClient[] clients = new WebClient[Program.NumClients];
+            for (int j = 0; j < Program.NumClients; j++)
+            {
+                clients[j] = new WebClient();
+            }
+
+            // Download multiple wagons at the same time
+            for (int j = 0; j < wagons.Count; j += Program.NumClients)
+            {
+                // Set up the async tasks
+                Task<string>[] tasks = new Task<string>[Program.NumClients];
+
+                for (int k = 0; k < Program.NumClients; k++)
+                {
+                    if (j + k < wagons.Count)
+                    {
+                        tasks[k] = clients[k].DownloadStringTaskAsync(new Uri("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagons[j + k]));
+                    }
+                }
+
+                // Get the task results
+                for (int k = 0; k < Program.NumClients; k++)
+                {
+                    if (j + k < wagons.Count)
+                    {
+                        string result;
+
+                        try
+                        {
+                            result = tasks[k].Result;
+                        }
+                        catch (Exception e)
+                        {
+                            result = e.Message;
+                        }
+
+                        allWagonsData[wagons[j + k]] = result;
+                    }
+                }
+            }
         }
     }
 }

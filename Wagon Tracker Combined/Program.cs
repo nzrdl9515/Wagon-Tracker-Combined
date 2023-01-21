@@ -268,26 +268,17 @@ namespace Wagon_Tracker_Combined
         static async Task downloadConstantly()
         {
             Instruction lastInstruction = DownloadInstructions[0];
-            WebClient client = new WebClient();
-            List<string> allData = new List<string>();
-            List<string> wagons = new List<string> { "IK10117", "IK11456", "IK10906", "IK11076", "IK11145", "IK11888", "IK12138", "IK12144", "IK12150",
-                "IK12167", "IK12173", "IK12196", "IK12207", "IK12213", "IK12236", "IK12242", "IK12259", "IK12265", "IK12271", "IK12288", "IK12294",
-                "IK12530", "IH8164", "IAB6489", "US3518", "UKK2454", "UKK9600", "UKK9979", "FG1197", "FG1208", "CA959", "CET217",
-                "CE3460", "CE3483", "CE3546", "IP125", "IA160", "CG13", "CG42", "CG59", "CG134", "CG186", "CG203", "CG226", "CG249", "ZWT422",
-                "ZWT557", "ZWT612", "ZWT719", "US3109", "US4108", "US216", "US579", "IC15", "IC21", "IC44", "IC73", "IC234", "IC326", "IC303",
-                "IC390", "IC522", "IA1717", "IA1781", "IK10031", "IK10060", "IK10083", "IK10175", "IK10267", "IK10307", "IK10342", "IK10405",
-                "IK10463", "IK11001", "IK11180", "IK11312", "IK12340", "IK12484", "IK12841", "IK13235", "IK13356", "IK13736", "IK14263"};
-            //List<string> wagonsToIgnore = new List<string>();
-
-            wagons.Sort(new StringLogicalComparer());
-
             DateTime last = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute - (DateTime.Now.Minute % 5), 0, 0);
+            SortedList<string, string> data = new SortedList<string, string>(new StringLogicalComparer());
 
-            Dictionary<string, string> lastData = new Dictionary<string, string>();
-
-            foreach (string wagon in wagons)
+            using(StreamReader sw = new StreamReader(FilePath + "continuous_download_wagons.txt"))
             {
-                lastData.Add(wagon, "");
+                string line;
+
+                while((line = sw.ReadLine()) != null)
+                {
+                    data.Add(line, "");
+                }
             }
 
             await Task.Run(() =>
@@ -315,11 +306,9 @@ namespace Wagon_Tracker_Combined
 
                                     string wagon = DownloadInstructions[i].Command.Substring(index + 1);
 
-                                    if (!wagons.Contains(wagon))
+                                    if (!data.ContainsKey(wagon))
                                     {
-                                        wagons.Add(wagon);
-                                        wagons.Sort(new StringLogicalComparer());
-                                        lastData.Add(wagon, "");
+                                        data.Add(wagon, "");
                                     }
 
                                     break;
@@ -328,31 +317,20 @@ namespace Wagon_Tracker_Combined
 
                                     wagon = DownloadInstructions[i].Command.Substring(index + 1);
 
-                                    if (wagons.Contains(wagon))
+                                    if (data.ContainsKey(wagon))
                                     {
-                                        wagons.Remove(wagon);
+                                        data.Remove(wagon);
                                     }
 
                                     break;
 
-                                /*case "ignorewagon":
-
-                                    wagon = DownloadInstructions[i].Command.Substring(index + 1);
-
-                                    if (!wagonsToIgnore.Contains(wagon))
-                                    {
-                                        wagonsToIgnore.Add(wagon);
-                                    }
-
-                                    break;*/
-
                                 case "viewwagons":
 
-                                    string wagonList = wagons[0];
+                                    string wagonList = data.Keys[0];
 
-                                    for(int j = 1; j < wagons.Count; j++)
+                                    for(int j = 1; j < data.Count; j++)
                                     {
-                                        wagonList += (',' + wagons[j]);
+                                        wagonList += (',' + data.Keys[j]);
                                     }
 
                                     DownloadInstructions.Add(new Instruction(wagonList));
@@ -371,9 +349,25 @@ namespace Wagon_Tracker_Combined
                     if (DateTime.Now > last.AddMinutes(5.0d))
                     {
                         last = last.AddMinutes(5);
-                        allData = new List<string>();
+                        //allData = new List<string>();
 
-                        for (int i = 0; i < wagons.Count; i++)
+                        SortedList<string, string> newData = new SortedList<string, string>(new StringLogicalComparer());
+
+                        DownloadWagons.Download(new List<string>(data.Keys), ref newData);
+
+                        List<string> dataToAppend = new List<string>();
+
+                        foreach(string wagon in data.Keys)
+                        {
+                            if(newData[wagon] != data[wagon])
+                            {
+                                data[wagon] = newData[wagon];
+
+                                dataToAppend.Add(wagon + " - " + DateTime.Now.ToString("g") + " - " + newData[wagon]);
+                            }
+                        }
+
+                        /*for (int i = 0; i < wagons.Count; i++)
                         {
                             string downloadString;
 
@@ -391,30 +385,17 @@ namespace Wagon_Tracker_Combined
                             if (downloadString != lastData[wagons[i]])
                             {
                                 lastData[wagons[i]] = downloadString;
-
-                                /*if (wagonsToIgnore.Contains(wagons[i]))
-                                {
-                                    // This seems pointless because we need the datapoint before it gets on the train to know where it comes from                                {
-                                    if (!fileLine.Contains("train"))
-                                    {
-                                        wagonsToIgnore.Remove(wagons[i]);
-
-                                        allData.Add(fileLine);
-                                    }
-                                }
-                                else
-                                {*/
-                                    allData.Add(fileLine);
-                                //}
+                                
+                                allData.Add(fileLine);
                             }
-                        }
+                        }*/
 
                         // To save the file
                         if (!FileLocked)
                         {
                             FileInUse = true;
 
-                            File.AppendAllLines("data.txt", allData);
+                            File.AppendAllLines("data.txt", dataToAppend);
 
                             FileInUse = false;
                         }
@@ -427,7 +408,7 @@ namespace Wagon_Tracker_Combined
 
                             FileInUse = true;
 
-                            File.AppendAllLines("data.txt", allData);
+                            File.AppendAllLines("data.txt", dataToAppend);
 
                             FileInUse = false;
                         }
@@ -451,7 +432,7 @@ namespace Wagon_Tracker_Combined
             });
         }
 
-        static List<string> selectMultipleFromList(ref Screen screen, ref Textbox leftBox, ref Textbox rightBox, List<string> options)
+        public static List<string> selectMultipleFromList(ref Screen screen, ref Textbox leftBox, ref Textbox rightBox, List<string> options)
         {
             int leftScrollPosition = 0;
             int rightScrollPosition = 0;
