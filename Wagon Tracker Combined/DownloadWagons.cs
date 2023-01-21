@@ -15,30 +15,19 @@ namespace Wagon_Tracker_Combined
             Textbox keywordBox = new Textbox(20, 5, 5, 3);
             ConsoleKeyInfo key;
             int scrollPosition = 0;
-            List<string> boxOutput = new List<string>();
-            List<string> data = new List<string>();
+            List<string> boxOutput;
+            List<string> data;
+            SortedList<string, string> allWagonsData = new SortedList<string, string>(new StringLogicalComparer());
 
-            // Using the dictionary to store all of the data so that a new keyword can be used
-            // Changing to list as there is no access to the specific wagon numbers later on, earier to loop through this way.
-            //Dictionary<string, string> allSelectedWagons = new Dictionary<string, string>();
-
-            //List<string> allWagons = new List<string>();
-            List<string> selectedWagons = new List<string>();
-            Dictionary<string, string> allWagonsData = new Dictionary<string, string>();
-
-            for(int i = 0; i < wagonClasses.Count; i++)
+            foreach(string wagonClass in wagonClasses)
             {
-                foreach(string wagon in File.ReadAllLines("wagons/" + wagonClasses[i] + ".txt"))
+                foreach(string wagon in File.ReadAllLines("wagons/" + wagonClass + ".txt"))
                 {
-                    //allWagons.Add(wagon);
-
                     allWagonsData.Add(wagon, "");
                 }
             }
 
             downloadWagons(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
-
-            // ************** I've gotten this far at the moment ********************
 
             screen.Clear();
             screen.Update("Input search parameter".ToCharArray(), 3, 1);
@@ -59,45 +48,26 @@ namespace Wagon_Tracker_Combined
             }
 
             screen.Clear();
-            Textbox displayBox = new Textbox(screen.Width - 8, screen.Height - 7, 5, 5);
+            Textbox displayBox = new Textbox(screen.Width - 8, screen.Height - 6, 5, 4);
 
-            string searchTerm;
+            data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
 
-            if(wagonClasses.Count < 5)
+            boxOutput = new List<string>();
+
+            for (int i = 0; i < displayBox.Height; i++)
             {
-                searchTerm = "Searching classes: ";
-                for (int i = 0; i < wagonClasses.Count - 1; i++)
+                if (i + scrollPosition == data.Count)
                 {
-                    searchTerm += wagonClasses[i] + ", ";
+                    break;
                 }
-                searchTerm += wagonClasses.Last();
-            }
-            else
-            {
-                searchTerm = "Searching multiple classes";
+
+                boxOutput.Add(data[i + scrollPosition]);
+
             }
 
-            screen.Update(searchTerm.ToCharArray(), 3, 1);
-            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 2);
+            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 1);
+            displayBox.UpdateData(boxOutput);
             displayBox.PrintData(ref screen, true);
-
-            /* This is where the downloader used to be */
-
-            if (wagonClasses.Count < 5)
-            {
-                searchTerm = "Search complete: ";
-                for (int i = 0; i < wagonClasses.Count - 1; i++)
-                {
-                    searchTerm += wagonClasses[i] + ", ";
-                }
-                searchTerm += wagonClasses.Last() + "                     ";
-            }
-            else
-            {
-                searchTerm = "Search complete                             ";
-            }
-
-            screen.Update(searchTerm.ToCharArray(), 3, 1);
 
             while ((key = Console.ReadKey(true)).Key != ConsoleKey.Escape)
             {
@@ -162,33 +132,10 @@ namespace Wagon_Tracker_Combined
 
                             scrollPosition = 0;
 
-                            data = new List<string>();
-                            string lastClass = "";
-                            int classCounter = 0;
-
-                            /*for(int i = 0; i < allWagonsData.Count; i++)
-                            {
-                                string nextClass = allWagonsData[i].Substring(0, allWagonsData[i].IndexOfAny("123456789".ToCharArray()));
-
-                                if(nextClass != lastClass)
-                                {
-                                    lastClass = nextClass;
-
-                                    data.Add(string.Format("Class {0} ({1}/{2})", wagonClasses[classCounter], classCounter + 1, wagonClasses.Count));
-
-                                    classCounter++;
-                                }
-
-                                if (keyword == "" || (allWagonsData[i].Contains(keyword) || allWagonsData[i].Contains(keyword.ToLower()) || allWagonsData[i].Contains(keyword.ToUpper())))
-                                {
-                                    data.Add(allWagonsData[i]);
-                                }
-                            }*/
+                            data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
 
                             screen.Clear();
-                            
-                            screen.Update(searchTerm.ToCharArray(), 3, 1);
-                            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 2);
+                            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 1);
                         }
                         break;
 
@@ -198,12 +145,34 @@ namespace Wagon_Tracker_Combined
                             // Download all wagons again
                             // i.e everything in allSelectedWagons
 
+                            downloadWagons(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
+
+                            data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
+
+                            screen.Clear();
+                            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 1);
                         }
                         else if((key.Modifiers & ConsoleModifiers.Control) != 0 && (key.Modifiers & ConsoleModifiers.Shift) != 0)
                         {
                             // Download only those wagons currently shown
                             // i.e. everything in data
 
+                            List<string> searchWagons = new List<string>();
+
+                            foreach(string entry in data)
+                            {
+                                if(entry.Substring(0, 5) != "Class")
+                                {
+                                    searchWagons.Add(entry.Substring(0, entry.IndexOf(" ")));
+                                }
+                            }
+
+                            downloadWagons(searchWagons, ref allWagonsData, ref screen);
+
+                            data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
+
+                            screen.Clear();
+                            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 1);
                         }
                         break;
                     
@@ -230,28 +199,53 @@ namespace Wagon_Tracker_Combined
             }
         }
 
-        private static void downloadWagons (List<string> wagons, ref Dictionary<string, string> allWagonsData, ref Screen screen)
+        private static List<string> getDisplayData(string keyword, ref SortedList<string, string> allWagonsData, int numClasses)
         {
+            List<string> displayData = new List<string>();
+
+            string lastClass = "";
+            int classCounter = 0;
+
+            for (int i = 0; i < allWagonsData.Count; i++)
+            {
+                // Check if the next wagon is from a new class, so as to add the heading line to the output data
+                string nextClass = allWagonsData.Keys[i].Substring(0, allWagonsData.Keys[i].IndexOfAny("123456789".ToCharArray()));
+
+                if (nextClass != lastClass)
+                {
+                    lastClass = nextClass;
+
+                    displayData.Add(string.Format("Class {0} ({1}/{2})", nextClass, classCounter + 1, numClasses));
+
+                    classCounter++;
+                }
+
+                // If the wagon matches the keyword, add it to the output data
+                if (keyword == "" || (allWagonsData.Values[i].Contains(keyword) || allWagonsData.Values[i].Contains(keyword.ToLower()) || allWagonsData.Values[i].Contains(keyword.ToUpper())))
+                {
+                    displayData.Add(allWagonsData.Keys[i] + " - " + allWagonsData.Values[i]);
+                }
+            }
+
+            return displayData;
+        }
+
+        private static void downloadWagons (List<string> wagons, ref SortedList<string, string> allWagonsData, ref Screen screen)
+        {
+            // Set up multiple download clients
             WebClient[] clients = new WebClient[Program.NumClients];
             for (int j = 0; j < Program.NumClients; j++)
             {
                 clients[j] = new WebClient();
             }
 
-            //data.Add(string.Format("Searching class {0} ({1}/{2})", wagonClasses[i], i + 1, wagonClasses.Count));
-
-            //screen.Update(string.Format("Current search: {0} (0/{1})               ", wagonClasses[i], wagons.Length).ToCharArray(), 3, 3);
-
-            /*if (data.Count > displayBox.Height)
-            {
-                scrollPosition = data.Count - displayBox.Height;
-            }*/
-
             System.Diagnostics.Stopwatch sw = new System.Diagnostics.Stopwatch();
             sw.Start();
 
+            // Download multiple wagons at the same time
             for (int j = 0; j < wagons.Count; j += Program.NumClients)
             {
+                // Set up the async tasks
                 Task<string>[] tasks = new Task<string>[Program.NumClients];
 
                 for (int k = 0; k < Program.NumClients; k++)
@@ -262,12 +256,11 @@ namespace Wagon_Tracker_Combined
                     }
                 }
 
+                // Get the task results
                 for (int k = 0; k < Program.NumClients; k++)
                 {
                     if (j + k < wagons.Count)
                     {
-                        //results[j + k] = tasks[k].Result;
-
                         string result;
 
                         try
@@ -280,73 +273,22 @@ namespace Wagon_Tracker_Combined
                         }
 
                         allWagonsData[wagons[j + k]] = result;
-
-                        //allSelectedWagons.Add(/*wagons[j + k], */wagons[j + k] + " - " + result);
-
-                        /*if (keyword == "" || (result.Contains(keyword) || result.Contains(keyword.ToLower()) || result.Contains(keyword.ToUpper())))
-                        {
-                            data.Add(wagons[j + k] + " - " + result);
-
-                            if (data.Count > displayBox.Height)
-                            {
-                                scrollPosition++;
-                            }
-                        }
-
-                        boxOutput = new List<string>();
-
-                        for (int l = 0; l < displayBox.Height; l++)
-                        {
-                            if (l + scrollPosition == data.Count)
-                            {
-                                break;
-                            }
-
-                            boxOutput.Add(data[l + scrollPosition]);
-                        }*/
                     }
                 }
 
+                // Update the screen to show download progress
                 TimeSpan timePerWagon = sw.Elapsed / (j + Program.NumClients);
                 TimeSpan estTimeRemaining = timePerWagon * (wagons.Count - j - Program.NumClients);
 
-                //screen.Update((sw.Elapsed.TotalMilliseconds))
-                //screen.Update((timePerWagon.TotalMilliseconds.ToString() + "         ").ToCharArray(), 3, 3);
-                screen.Update(string.Format("Wagons downloaded: {0}/{1}         ", j, wagons.Count).ToCharArray(), 3, 2);
-                screen.Update(("Time remaining: " + Math.Round(estTimeRemaining.TotalSeconds).ToString() + "s        ").ToCharArray(), 3, 3);
+                screen.Update(string.Format("Wagons downloaded: {0}/{1}         ", j, wagons.Count).ToCharArray(), 3, 1);
 
-                /*for (int j = 0; j < wagons.Length; j++)
+                if (j > 30)
                 {
-                    if (keyword == "" || (results[j].Contains(keyword) || results[j].Contains(keyword.ToLower()) || results[j].Contains(keyword.ToUpper())))
-                    {
-                        data.Add(wagons[j] + " - " + results[j]);
-
-                        if (data.Count > box.Height)
-                        {
-                            scrollPosition++;
-                        }
-                    }
-
-                    boxOutput = new List<string>();
-
-                    for (int k = 0; k < box.Height; k++)
-                    {
-                        if (k + scrollPosition == data.Count)
-                        {
-                            break;
-                        }
-
-                        boxOutput.Add(data[k + scrollPosition]);
-                    }
-                }*/
-
-                //displayBox.UpdateData(boxOutput);
-                //displayBox.PrintData(ref screen, true);
-
-                //screen.Update(string.Format("Current search: {0} ({1}/{2})                 ", wagonClasses[i], j, wagons.Length).ToCharArray(), 3, 3);
+                    screen.Update(("Time remaining: " + Math.Round(estTimeRemaining.TotalSeconds).ToString() + "s        ").ToCharArray(), 3, 2);
+                }
             }
 
-            //screen.Update("                                              ".ToCharArray(), 3, 3);
+            sw.Stop();
         }
     }
 }
