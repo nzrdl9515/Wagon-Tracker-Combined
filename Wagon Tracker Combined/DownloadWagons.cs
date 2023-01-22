@@ -232,14 +232,13 @@ namespace Wagon_Tracker_Combined
 
         public static void Download (List<string> wagons, ref SortedList<string, string> allWagonsData, ref Screen screen)
         {
-            // Not needed for anything referencing this overload
-            /*foreach(string wagon in wagons)
+            foreach(string wagon in wagons)
             {
                 if (!allWagonsData.ContainsKey(wagon))
                 {
                     allWagonsData.Add(wagon, "");
                 }
-            }*/
+            }
 
             // Set up multiple download clients
             WebClient[] clients = new WebClient[Program.NumClients];

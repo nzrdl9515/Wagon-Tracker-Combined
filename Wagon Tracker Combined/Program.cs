@@ -40,8 +40,8 @@ namespace Wagon_Tracker_Combined
         public static List<Instruction> DownloadInstructions;
         public static bool FileLocked;
         public static bool FileInUse;
-        public const string FilePath = "C:/Users/johnv/OneDrive/Documents/My Stuff/Wagon Tracker Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //     Surface
-        //public const string FilePath = "C:/Users/John/source/repos/nzrdl9515/Wagon-Tracker-Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //            Desktop
+        //public const string FilePath = "C:/Users/johnv/OneDrive/Documents/My Stuff/Wagon Tracker Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //     Surface
+        public const string FilePath = "C:/Users/John/source/repos/nzrdl9515/Wagon-Tracker-Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //            Desktop
         public const int NumClients = 10;
 
         static void Main(string[] args)
@@ -134,105 +134,129 @@ namespace Wagon_Tracker_Combined
                         screen.Clear();
                         screen.Update("Downloading latest information".ToCharArray(), 3, 1);
 
-                        // Send instruction to get list of wagons to be continuously downloaded
-                        DownloadInstructions.Add(new Instruction("viewwagons"));
+                        List<string> contWagons = new List<string>(File.ReadAllLines(FilePath + "continuous_download_wagons.txt"));
 
-                        // Wait 1s for continuous downloader to respond to request
-                        System.Threading.Thread.Sleep(1000);
+                        SortedList<string, string> contWagonsData = new SortedList<string, string>(new StringLogicalComparer());
 
-                        // Receive information from continuous downloader as a string and parse it to a list
-                        string wagonsFromDownloader = DownloadInstructions.Last().Command;
-                        List<string> downloadWagons = new List<string>();
-                        int startIndex = 0, endIndex = 0;
-
-                        while(endIndex != -1)
-                        {
-                            if (endIndex == 0)
-                            {
-                                startIndex = -1;
-                            }
-                            else
-                            {
-                                startIndex = endIndex;
-                            }
-
-                            endIndex = wagonsFromDownloader.IndexOf(',', startIndex + 1);
-
-                            if (endIndex == -1)
-                            {
-                                downloadWagons.Add(wagonsFromDownloader.Substring(startIndex + 1));
-                            }
-                            else
-                            {
-                                downloadWagons.Add(wagonsFromDownloader.Substring(startIndex + 1, endIndex - startIndex - 1));
-                            }
-                        }
-
-                        // Download current information for all the wagons
-                        string[] downloadWagonInfo = new string[downloadWagons.Count];
-                        WebClient[] clients = new WebClient[NumClients];
-                        for (int j = 0; j < NumClients; j++)
-                        {
-                            clients[j] = new WebClient();
-                        }
-
-                        for (int j = 0; j < downloadWagons.Count; j += NumClients)
-                        {
-                            Task<string>[] tasks = new Task<string>[NumClients];
-
-                            for (int k = 0; k < NumClients; k++)
-                            {
-                                if (j + k < downloadWagons.Count)
-                                {
-                                    tasks[k] = clients[k].DownloadStringTaskAsync(new Uri("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + downloadWagons[j + k]));
-                                }
-                            }
-
-                            for (int k = 0; k < NumClients; k++)
-                            {
-                                if (j + k < downloadWagons.Count)
-                                {
-                                    //results[j + k] = tasks[k].Result;
-
-                                    string result;
-
-                                    try
-                                    {
-                                        result = tasks[k].Result;
-                                    }
-                                    catch (Exception e)
-                                    {
-                                        result = e.Message;
-                                    }
-
-                                    downloadWagonInfo[k + j] = result;
-                                }
-                            }
-
-                            screen.Update(string.Format("Current search: {0}/{1}                ", j, downloadWagons.Count).ToCharArray(), 3, 2);
-                        }
+                        DownloadWagons.Download(contWagons, ref contWagonsData, ref screen);
+                        screen.Clear();
 
                         // Options:
-                        // - Add new wagons to search
-                        // - Remove wagons from search
+                        // - Add new wagons to search -> using a keyboard shortcut like ctrl + A?
+                        // - Remove wagons from search -> using the select multiple from list after ctrl + R?
 
-                        rightBox = new Textbox(10, 30, 20, 3);
-                        leftBox = new Textbox(10, 30, 5, 3);
+                        rightBox = new Textbox(10, screen.Height - 7, screen.Width - 13, 3);
+                        leftBox = new Textbox(screen.Width - 24, screen.Height - 7, 5, 3);
 
-                        List<string> wagonstoremove = selectMultipleFromList(ref screen, ref leftBox, ref rightBox, downloadWagons);
+                        /*List<string> displayData = new List<string>();
 
-                        foreach(string wagon in wagonstoremove)
+                        for (int i = 0; i < contWagons.Count; i++)
                         {
-                            DownloadInstructions.Add(new Instruction("removewagon " + wagon));
+                            displayData.Add(contWagonsData.Keys[i] + " - " + contWagonsData.Values[i]);
+                        }*/
+
+                        List<string> boxOutput = new List<string>();
+                        ConsoleKeyInfo key;
+                        Textbox displayBox = new Textbox(screen.Width - 8, screen.Height - 6, 5, 4);
+                        int scrollPosition = 0;
+
+                        for (int i = 0; i < displayBox.Height; i++)
+                        {
+                            if (i + scrollPosition == contWagons.Count)
+                            {
+                                break;
+                            }
+
+                            boxOutput.Add(contWagonsData.Keys[i + scrollPosition] + " - " + contWagonsData.Values[i + scrollPosition]);
+
                         }
 
-                        DownloadInstructions.Add(new Instruction("viewwagons"));
+                        screen.Update(("Continuous download wagons").ToCharArray(), 3, 1);
+                        displayBox.UpdateData(boxOutput);
+                        displayBox.PrintData(ref screen, true);
 
-                        System.Threading.Thread.Sleep(1000);
+                        while ((key = Console.ReadKey(true)).Key != ConsoleKey.Escape)
+                        {
+                            switch (key.Key)
+                            {
+                                case ConsoleKey.RightArrow:
 
-                        Console.WriteLine(DownloadInstructions.Last().Command);
+                                    break;
 
-                        Console.ReadKey();
+                                case ConsoleKey.LeftArrow:
+
+                                    break;
+
+                                case ConsoleKey.UpArrow:
+
+                                    if (scrollPosition > 0)
+                                    {
+                                        if (scrollPosition < 5)
+                                        {
+                                            scrollPosition = 0;
+                                        }
+                                        else
+                                        {
+                                            scrollPosition -= 5;
+                                        }
+                                    }
+                                    break;
+
+                                case ConsoleKey.DownArrow:
+
+                                    if (scrollPosition + displayBox.Height < contWagons.Count)
+                                    {
+                                        scrollPosition += 5;
+                                    }
+
+                                    break;
+
+                                case ConsoleKey.Enter:
+
+                                    break;
+
+                                case ConsoleKey.A:
+                                    if (key.Modifiers == ConsoleModifiers.Control)
+                                    {
+                                        // Textbox to manually insert the wagon numbers to search
+                                        // Things to consider:
+                                        // - Include check digit or not
+                                        // - Check against wagon lists for valid wagon
+                                        // Finally, return to the view contWagons screen
+                                    }
+                                    break;
+
+                                case ConsoleKey.R:
+                                    if (key.Modifiers == ConsoleModifiers.Control)
+                                    {
+                                        // SelectMultipleFromList method to select which wagons out of contWagons to remove
+                                        // Then re-write the text file
+                                        // Then return to the view contWagons screen
+                                    }
+
+                                    break;
+
+                                default:
+
+                                    break;
+                            }
+
+                            boxOutput = new List<string>();
+
+                            for (int i = 0; i < displayBox.Height; i++)
+                            {
+                                if (i + scrollPosition == contWagons.Count)
+                                {
+                                    break;
+                                }
+
+                                boxOutput.Add(contWagonsData.Keys[i + scrollPosition] + " - " + contWagonsData.Values[i + scrollPosition]);
+
+                            }
+
+                            displayBox.UpdateData(boxOutput);
+                            displayBox.PrintData(ref screen, true);
+                        }
 
                         break;
 
@@ -324,7 +348,7 @@ namespace Wagon_Tracker_Combined
 
                                     break;
 
-                                case "viewwagons":
+                                /*case "viewwagons":
 
                                     string wagonList = data.Keys[0];
 
@@ -335,7 +359,7 @@ namespace Wagon_Tracker_Combined
 
                                     DownloadInstructions.Add(new Instruction(wagonList));
 
-                                    break;
+                                    break;*/
 
                                 default:
 
@@ -357,13 +381,13 @@ namespace Wagon_Tracker_Combined
 
                         List<string> dataToAppend = new List<string>();
 
-                        foreach(string wagon in data.Keys)
+                        for(int i = 0; i < newData.Count; i++)
                         {
-                            if(newData[wagon] != data[wagon])
+                            if(newData[newData.Keys[i]] != data[newData.Keys[i]])
                             {
-                                data[wagon] = newData[wagon];
+                                data[newData.Keys[i]] = newData[newData.Keys[i]];
 
-                                dataToAppend.Add(wagon + " - " + DateTime.Now.ToString("g") + " - " + newData[wagon]);
+                                dataToAppend.Add(newData.Keys[i] + " - " + DateTime.Now.ToString("g") + " - " + newData[newData.Keys[i]]);
                             }
                         }
 
