@@ -154,12 +154,37 @@ namespace Wagon_Tracker_Combined
             Console.SetCursorPosition(pos - linePos[lineIndex] + Left, lineIndex + Top - scrollPosition);
         }
 
-        public List<char> GetData()
+        /*public List<char> GetData()
         {
             return data;
+        }*/
+
+        public string GetKeyboardInput(string message, ref Screen screen, bool printBorder)
+        {
+            ConsoleKeyInfo key;
+
+            screen.Clear();
+            screen.Update(message.ToCharArray(), 3, 1);
+            PrintData(ref screen, true);
+            SetCursor();
+
+            while ((key = Console.ReadKey(true)).Key != ConsoleKey.Enter)
+            {
+                KeyPressLoop(key, ref screen, printBorder);
+
+                SetCursor();
+            }
+
+            string keyword = "";
+            foreach (char i in data)
+            {
+                keyword += i;
+            }
+
+            return keyword;
         }
 
-        public void KeyPressLoop(ConsoleKeyInfo key, ref Screen screen, bool printBorder)
+        private void KeyPressLoop(ConsoleKeyInfo key, ref Screen screen, bool printBorder)
         {
             // Check various possible key presses
             if (key.KeyChar >= 97 && key.KeyChar <= 122) // ----- Uppercase characters

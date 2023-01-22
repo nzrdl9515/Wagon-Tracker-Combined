@@ -29,7 +29,7 @@ namespace Wagon_Tracker_Combined
 
             Download(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
 
-            screen.Clear();
+            /*screen.Clear();
             screen.Update("Input search parameter".ToCharArray(), 3, 1);
             keywordBox.PrintData(ref screen, true);
             keywordBox.SetCursor();
@@ -41,11 +41,12 @@ namespace Wagon_Tracker_Combined
                 keywordBox.SetCursor();
             }
 
-            string keyword = "";
             foreach (char i in keywordBox.GetData())
             {
                 keyword += i;
-            }
+            }*/
+
+            string keyword = keywordBox.GetKeyboardInput("Input search parameter", ref screen, true);
 
             screen.Clear();
             Textbox displayBox = new Textbox(screen.Width - 8, screen.Height - 6, 5, 4);
@@ -112,7 +113,7 @@ namespace Wagon_Tracker_Combined
                     case ConsoleKey.D:
                         if (key.Modifiers == ConsoleModifiers.Control)
                         {
-                            screen.Clear();
+                            /*screen.Clear();
                             screen.Update("Input new search parameter".ToCharArray(), 3, 1);
                             keywordBox.PrintData(ref screen, true);
                             keywordBox.SetCursor();
@@ -128,7 +129,10 @@ namespace Wagon_Tracker_Combined
                             foreach (char c in keywordBox.GetData())
                             {
                                 keyword += c;
-                            }
+                            }*/
+
+                            keyword = keywordBox.GetKeyboardInput("Input new search parameter", ref screen, true);
+
 
                             scrollPosition = 0;
 

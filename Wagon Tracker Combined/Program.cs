@@ -40,8 +40,8 @@ namespace Wagon_Tracker_Combined
         public static List<Instruction> DownloadInstructions;
         public static bool FileLocked;
         public static bool FileInUse;
-        //public const string FilePath = "C:/Users/johnv/OneDrive/Documents/My Stuff/Wagon Tracker Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //     Surface
-        public const string FilePath = "C:/Users/John/source/repos/nzrdl9515/Wagon-Tracker-Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //            Desktop
+        public const string FilePath = "C:/Users/johnv/OneDrive/Documents/My Stuff/Wagon Tracker Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //     Surface
+        //public const string FilePath = "C:/Users/John/source/repos/nzrdl9515/Wagon-Tracker-Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //            Desktop
         public const int NumClients = 10;
 
         static void Main(string[] args)
@@ -141,19 +141,8 @@ namespace Wagon_Tracker_Combined
                         DownloadWagons.Download(contWagons, ref contWagonsData, ref screen);
                         screen.Clear();
 
-                        // Options:
-                        // - Add new wagons to search -> using a keyboard shortcut like ctrl + A?
-                        // - Remove wagons from search -> using the select multiple from list after ctrl + R?
-
                         rightBox = new Textbox(10, screen.Height - 7, screen.Width - 13, 3);
                         leftBox = new Textbox(screen.Width - 24, screen.Height - 7, 5, 3);
-
-                        /*List<string> displayData = new List<string>();
-
-                        for (int i = 0; i < contWagons.Count; i++)
-                        {
-                            displayData.Add(contWagonsData.Keys[i] + " - " + contWagonsData.Values[i]);
-                        }*/
 
                         List<string> boxOutput = new List<string>();
                         ConsoleKeyInfo key;
@@ -218,6 +207,13 @@ namespace Wagon_Tracker_Combined
                                 case ConsoleKey.A:
                                     if (key.Modifiers == ConsoleModifiers.Control)
                                     {
+                                        Textbox keywordBox = new Textbox(20, 5, 5, 3);
+
+                                        string userInput = new Textbox(20, 5, 5, 3).GetKeyboardInput("Input wagons to add to continuous search", ref screen, true);
+
+                                        screen.Clear();
+
+
                                         // Textbox to manually insert the wagon numbers to search
                                         // Things to consider:
                                         // - Include check digit or not

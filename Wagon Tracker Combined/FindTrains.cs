@@ -271,8 +271,8 @@ namespace Wagon_Tracker_Combined
 
                         while (Array.FindIndex(locationFile, s => s.Contains(location) && s.IndexOf(location) + location.Length == s.Length) == -1)
                         {
-                            location = "";
-                            screen.Clear();
+                            location = box.GetKeyboardInput("Input location to search", ref screen, true);
+                            /*screen.Clear();
                             screen.Update("Input location to search".ToCharArray(), 3, 1);
                             box.PrintData(ref screen, true);
                             box.SetCursor();
@@ -287,7 +287,7 @@ namespace Wagon_Tracker_Combined
                             foreach (char i in box.GetData())
                             {
                                 location += i;
-                            }
+                            }*/
                         }
 
                         screen.Clear();
