@@ -134,15 +134,12 @@ namespace Wagon_Tracker_Combined
                         screen.Clear();
                         screen.Update("Downloading latest information".ToCharArray(), 3, 1);
 
-                        List<string> contWagons = new List<string>(File.ReadAllLines(FilePath + "continuous_download_wagons.txt"));
+                        //List<string> contWagons = new List<string>(File.ReadAllLines(FilePath + "continuous_download_wagons.txt"));
 
                         SortedList<string, string> contWagonsData = new SortedList<string, string>(new StringLogicalComparer());
 
-                        DownloadWagons.Download(contWagons, ref contWagonsData, ref screen);
+                        DownloadWagons.Download(new List<string>(File.ReadAllLines(FilePath + "continuous_download_wagons.txt")), ref contWagonsData, ref screen);
                         screen.Clear();
-
-                        rightBox = new Textbox(10, screen.Height - 7, screen.Width - 13, 3);
-                        leftBox = new Textbox(screen.Width - 24, screen.Height - 7, 5, 3);
 
                         List<string> boxOutput = new List<string>();
                         ConsoleKeyInfo key;
@@ -151,7 +148,7 @@ namespace Wagon_Tracker_Combined
 
                         for (int i = 0; i < displayBox.Height; i++)
                         {
-                            if (i + scrollPosition == contWagons.Count)
+                            if (i + scrollPosition == contWagonsData.Count)
                             {
                                 break;
                             }
@@ -193,7 +190,7 @@ namespace Wagon_Tracker_Combined
 
                                 case ConsoleKey.DownArrow:
 
-                                    if (scrollPosition + displayBox.Height < contWagons.Count)
+                                    if (scrollPosition + displayBox.Height < contWagonsData.Count)
                                     {
                                         scrollPosition += 5;
                                     }
@@ -231,6 +228,25 @@ namespace Wagon_Tracker_Combined
                                         // SelectMultipleFromList method to select which wagons out of contWagons to remove
                                         // Then re-write the text file
                                         // Then return to the view contWagons screen
+
+                                        rightBox = new Textbox(10, 30, 20, 3);
+                                        leftBox = new Textbox(10, 30, 5, 3);
+
+                                        screen.Clear();
+                                        screen.Update("Select wagons to remove from continuous download".ToCharArray(), 3, 1);
+                                        List<string> wagonsToRemove = selectMultipleFromList(ref screen, ref leftBox, ref rightBox, new List<string>(contWagonsData.Keys));
+
+                                        if (wagonsToRemove.Count != 0 && wagonsToRemove[0] != "escape")
+                                        {
+                                            screen.Clear();
+
+                                            foreach(string wagon in wagonsToRemove)
+                                            {
+                                                contWagonsData.Remove(wagon);
+
+                                                DownloadInstructions.Add(new Instruction("removewagon " + wagon));
+                                            }
+                                        }
                                     }
 
                                     break;
@@ -244,7 +260,7 @@ namespace Wagon_Tracker_Combined
 
                             for (int i = 0; i < displayBox.Height; i++)
                             {
-                                if (i + scrollPosition == contWagons.Count)
+                                if (i + scrollPosition == contWagonsData.Count)
                                 {
                                     break;
                                 }
