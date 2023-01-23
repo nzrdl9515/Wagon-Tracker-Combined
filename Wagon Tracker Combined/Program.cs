@@ -40,8 +40,8 @@ namespace Wagon_Tracker_Combined
         public static List<Instruction> DownloadInstructions;
         public static bool FileLocked;
         public static bool FileInUse;
-        public const string FilePath = "C:/Users/johnv/OneDrive/Documents/My Stuff/Wagon Tracker Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //     Surface
-        //public const string FilePath = "C:/Users/John/source/repos/nzrdl9515/Wagon-Tracker-Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //            Desktop
+        //public const string FilePath = "C:/Users/johnv/OneDrive/Documents/My Stuff/Wagon Tracker Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //     Surface
+        public const string FilePath = "C:/Users/John/source/repos/nzrdl9515/Wagon-Tracker-Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //            Desktop
         public const int NumClients = 10;
 
         static void Main(string[] args)
@@ -207,18 +207,21 @@ namespace Wagon_Tracker_Combined
                                 case ConsoleKey.A:
                                     if (key.Modifiers == ConsoleModifiers.Control)
                                     {
-                                        Textbox keywordBox = new Textbox(20, 5, 5, 3);
+                                        string[] wagonsToAdd = new Textbox(20, 5, 5, 3).GetKeyboardInput("Input wagons to add to continuous search", ref screen, true).Replace(" ", "").Split(',');
 
-                                        string userInput = new Textbox(20, 5, 5, 3).GetKeyboardInput("Input wagons to add to continuous search", ref screen, true);
+                                        foreach(string wagon in wagonsToAdd)
+                                        {
+                                            string wagonClass = wagon.Substring(0, wagon.IndexOfAny("0123456789".ToCharArray()));
+
+                                            if (File.ReadAllLines(FilePath + "wagons/" + wagonClass + ".txt").Contains(wagon))
+                                            {
+                                                DownloadInstructions.Add(new Instruction("addwagon " + wagon));
+                                            }
+                                        }
+
+                                        DownloadWagons.Download(new List<string>(wagonsToAdd), ref contWagonsData);
 
                                         screen.Clear();
-
-
-                                        // Textbox to manually insert the wagon numbers to search
-                                        // Things to consider:
-                                        // - Include check digit or not
-                                        // - Check against wagon lists for valid wagon
-                                        // Finally, return to the view contWagons screen
                                     }
                                     break;
 
@@ -344,6 +347,8 @@ namespace Wagon_Tracker_Combined
                                         data.Add(wagon, "");
                                     }
 
+                                    File.WriteAllLines(FilePath + "continuous_download_wagons.txt", data.Keys);
+
                                     break;
 
                                 case "removewagon":
@@ -354,6 +359,8 @@ namespace Wagon_Tracker_Combined
                                     {
                                         data.Remove(wagon);
                                     }
+
+                                    File.WriteAllLines(FilePath + "continuous_download_wagons.txt", data.Keys);
 
                                     break;
 
