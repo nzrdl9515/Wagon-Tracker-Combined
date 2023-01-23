@@ -143,6 +143,36 @@ namespace Wagon_Tracker_Combined
                         }
                         break;
 
+                    case ConsoleKey.S:
+                        if(key.Modifiers == ConsoleModifiers.Control)
+                        {
+                            screen.Clear();
+
+                            List<string> contWagons = new List<string>();
+
+                            foreach (string entry in data)
+                            {
+                                if (entry.Substring(0, 5) != "Class")
+                                {
+                                    contWagons.Add(entry.Substring(0, entry.IndexOf(" ")));
+                                }
+                            }
+
+                            screen.Update(string.Format("Confirm {0} wagons to continuously download", contWagons.Count).ToCharArray(), 3, 1);
+
+                            Textbox selectBox = new Textbox(50, 2, 5, 3);
+                            if(Program.selectFromList(ref screen, ref selectBox, new List<string> { "No", "Yes" }, 0) == 1)
+                            {
+                                foreach(string wagon in contWagons)
+                                {
+                                    Program.DownloadInstructions.Add(new Instruction("addwagon " + wagon));
+                                }
+                            }
+
+                            screen.Clear();
+                        }
+                        break;
+
                     case ConsoleKey.R:
                         if (key.Modifiers == ConsoleModifiers.Control)
                         {
