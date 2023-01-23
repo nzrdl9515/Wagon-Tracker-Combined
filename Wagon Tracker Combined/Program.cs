@@ -291,7 +291,7 @@ namespace Wagon_Tracker_Combined
             DateTime last = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute - (DateTime.Now.Minute % 5), 0, 0);
             SortedList<string, string> data = new SortedList<string, string>(new StringLogicalComparer());
 
-            using(StreamReader sw = new StreamReader(FilePath + "continuous_download_wagons.txt"))
+            /*using(StreamReader sw = new StreamReader(FilePath + "continuous_download_wagons.txt"))
             {
                 string line;
 
@@ -299,6 +299,19 @@ namespace Wagon_Tracker_Combined
                 {
                     data.Add(line, "");
                 }
+            }*/
+
+            string[] contWagons = File.ReadAllLines(FilePath + "continuous_download_wagons.txt");
+            //int numWagons = contWagons.Length;
+
+            for(int i = 0; i < contWagons.Length; i++)
+            {
+                /*if (i == 87)
+                {
+                    break;
+                }*/
+
+                data.Add(contWagons[i], "");
             }
 
             await Task.Run(() =>
