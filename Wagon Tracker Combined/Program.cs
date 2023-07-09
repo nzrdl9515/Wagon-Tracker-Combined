@@ -55,13 +55,15 @@ namespace Wagon_Tracker_Combined
             FileLocked = false;
             FileInUse = false;
             Screen screen = new Screen(200, 50);
-            Textbox box = new Textbox(50, 5, 5, 3);
+            Textbox box = new Textbox(50, 6, 5, 3);
             DownloadInstructions = new List<Instruction>();
             DownloadInstructions.Add(new Instruction("start"));
+            Searches searches = new Searches();
 
             List<string> options = new List<string>(new string[] {
                 "Search for new wagons",
-                "Search for known wagons",
+                "Search manually for known wagons",
+                "Perform saved search for known wagons",
                 "Scroll through downloaded data",
                 "Find trains in downloaded data",
                 "View wagons in continuous download list"});
@@ -85,11 +87,11 @@ namespace Wagon_Tracker_Combined
                 {
                     case 0:
 
-                        // **************************************
-                        // ***** This needs some user input *****
-                        // **************************************
+                        Textbox searchBox = new Textbox(20, 5, 5, 3);
 
-                        FindWagons.Begin(new string[] { "HLC" });
+                        string[] searchWagons = searchBox.GetKeyboardInput("Input wagons to download", ref screen, true).Replace(" ", "").Split(',');
+
+                        FindWagons.Begin(searchWagons, ref screen);
 
                         break;
 
@@ -107,29 +109,31 @@ namespace Wagon_Tracker_Combined
                         if (selectedOptions.Count != 0 && selectedOptions[0] != "escape")
                         {
                             screen.Clear();
-                            DownloadWagons.Run(selectedOptions, ref screen);
+                            DownloadWagons.Run(selectedOptions, ref screen, ref searches);
                         }
                         break;
 
                     case 2:
+                        
+
+
+                        break;
+
+                    case 3:
 
                         screen.Clear();
                         ScrollWagons.Run(new Data(FilePath + "data.txt"), ref screen);
 
                         break;
 
-                    case 3:
-
-                        // ***********************************************
-                        // ***** This needs to actually do something *****
-                        // ***********************************************
+                    case 4:
 
                         screen.Clear();
                         FindTrains.Run(new Data(FilePath + "data.txt"), ref screen);
 
                         break;
 
-                    case 4:
+                    case 5:
                         // View wagons in download list
                         screen.Clear();
                         screen.Update("Downloading latest information".ToCharArray(), 3, 1);
@@ -247,6 +251,8 @@ namespace Wagon_Tracker_Combined
                                                 DownloadInstructions.Add(new Instruction("removewagon " + wagon));
                                             }
                                         }
+
+                                        scrollPosition = 0;
                                     }
 
                                     break;

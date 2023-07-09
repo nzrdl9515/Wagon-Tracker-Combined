@@ -10,11 +10,12 @@ namespace Wagon_Tracker_Combined
 {
     static class DownloadWagons
     {
-        public static void Run(List<string> wagonClasses, ref Screen screen)
+        public static void Run(List<string> wagonClasses, ref Screen screen, ref Searches searches)
         {
             Textbox keywordBox = new Textbox(20, 5, 5, 3);
             ConsoleKeyInfo key;
             int scrollPosition = 0;
+            bool inUniqueTrains = false;
             List<string> boxOutput;
             List<string> data;
             SortedList<string, string> allWagonsData = new SortedList<string, string>(new StringLogicalComparer());
@@ -110,8 +111,8 @@ namespace Wagon_Tracker_Combined
 
                         break;
 
-                    case ConsoleKey.D:
-                        if (key.Modifiers == ConsoleModifiers.Control)
+                    case ConsoleKey.F:
+                        if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
                         {
                             /*screen.Clear();
                             screen.Update("Input new search parameter".ToCharArray(), 3, 1);
@@ -143,8 +144,8 @@ namespace Wagon_Tracker_Combined
                         }
                         break;
 
-                    case ConsoleKey.S:
-                        if(key.Modifiers == ConsoleModifiers.Control)
+                    case ConsoleKey.D:
+                        if(key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
                         {
                             screen.Clear();
 
@@ -174,19 +175,29 @@ namespace Wagon_Tracker_Combined
                         break;
 
                     case ConsoleKey.R:
-                        if (key.Modifiers == ConsoleModifiers.Control)
+                        if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
                         {
                             // Download all wagons again
                             // i.e everything in allSelectedWagons
 
+                            List<string> searchWagons = new List<string>();
+
+                            foreach (string entry in data)
+                            {
+                                if (entry.Substring(0, 5) != "Class")
+                                {
+                                    searchWagons.Add(entry.Substring(0, entry.IndexOf(" ")));
+                                }
+                            }
+
                             Download(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
 
-                            data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
+                            data = getDisplayData(searchWagons, ref allWagonsData, wagonClasses.Count);
 
                             screen.Clear();
-                            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 1);
+                            screen.Update(("Data refreshed. Original keyword: " + keyword).ToCharArray(), 3, 1);
                         }
-                        else if((key.Modifiers & ConsoleModifiers.Control) != 0 && (key.Modifiers & ConsoleModifiers.Shift) != 0)
+                        else if((key.Modifiers & ConsoleModifiers.Control) != 0 && (key.Modifiers & ConsoleModifiers.Shift) != 0 && !inUniqueTrains)
                         {
                             // Download only those wagons currently shown
                             // i.e. everything in data
@@ -203,41 +214,101 @@ namespace Wagon_Tracker_Combined
 
                             Download(searchWagons, ref allWagonsData, ref screen);
 
-                            data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
+                            data = getDisplayData(searchWagons, ref allWagonsData, wagonClasses.Count);
 
                             screen.Clear();
-                            screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 1);
+                            screen.Update(("Data refreshed. Original keyword: " + keyword).ToCharArray(), 3, 1);
                         }
                         break;
 
-                    case ConsoleKey.T: // ************************ Needs a good choice of key for saving search, Ctrl + S seems like a decent option, but this is already in use ************************
-                        /*if (key.Modifiers == ConsoleModifiers.Control)
+                    case ConsoleKey.S: // ************************ Save search ************************
+                        if (key.Modifiers == ConsoleModifiers.Control)
                         {
                             screen.Clear();
 
-                            List<string> contWagons = new List<string>();
+                            string searchName = keywordBox.GetKeyboardInput("Input name for saved search", ref screen, true);
+                            string wagonsToSave = wagonClasses[0];
 
-                            foreach (string entry in data)
+                            for(int i = 1; i < wagonClasses.Count; i++)
                             {
-                                if (entry.Substring(0, 5) != "Class")
-                                {
-                                    contWagons.Add(entry.Substring(0, entry.IndexOf(" ")));
-                                }
+                                wagonsToSave = wagonsToSave + "," + wagonClasses[i];
                             }
 
-                            screen.Update(string.Format("Confirm {0} wagons to continuously download", contWagons.Count).ToCharArray(), 3, 1);
+                            string previousSearchName = searches.CheckExistingSearch(wagonsToSave, keyword);
 
-                            Textbox selectBox = new Textbox(50, 2, 5, 3);
-                            if (Program.selectFromList(ref screen, ref selectBox, new List<string> { "No", "Yes" }, 0) == 1)
+                            if (previousSearchName == null)
                             {
-                                foreach (string wagon in contWagons)
+                                // Search hasn't already been saved under a different name, so happily add a new search to the existing collection
+                                searches.AddSearch(searchName, wagonsToSave, keyword);
+                            }
+                            else // Search has already been saved
+                            {
+                                if (previousSearchName == searchName)
                                 {
-                                    Program.DownloadInstructions.Add(new Instruction("addwagon " + wagon));
+                                    // Name was the same, so no action needs to be taken.
+                                    screen.Clear();
+
+                                    screen.Update("This search has already been saved under the same name. Press any key to continue.".ToCharArray(), 3, 1);
+
+                                    Console.ReadKey();
+                                }
+                                else
+                                {
+                                    // Name was different, so ask if it should be updated.
+                                    screen.Clear();
+                                    screen.Update(string.Format("This search has already been saved as '{0}'. Re-name this saved search as '{1}'?", previousSearchName, searchName).ToCharArray(), 3, 1);
+
+                                    Textbox selectBox = new Textbox(50, 2, 5, 3);
+                                    if(Program.selectFromList(ref screen, ref selectBox, new List<string> { "No", "Yes" }, 0) == 1)
+                                    {
+                                        searches.UpdateSearchName(previousSearchName, searchName);
+                                    }
                                 }
                             }
 
                             screen.Clear();
-                        }*/
+                        }
+                        break;
+
+                    case ConsoleKey.T: // Search for all the unique trains in the data
+                        if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
+                        {
+                            if (!inUniqueTrains)
+                            {
+                                inUniqueTrains = true;
+
+                                List<string> uniqueTrains = new List<string>();
+
+                                foreach (string wagon in allWagonsData.Values)
+                                {
+                                    if (!uniqueTrains.Contains(wagon) && wagon.Contains("train"))
+                                    {
+                                        uniqueTrains.Add(wagon);
+                                    }
+                                }
+
+                                uniqueTrains.Sort();
+
+                                data = uniqueTrains;
+
+                                screen.Clear();
+                                screen.Update(("Unique trains").ToCharArray(), 3, 1);
+
+                                scrollPosition = 0;
+                            }
+                            else
+                            {
+                                inUniqueTrains = false;
+
+                                scrollPosition = 0;
+
+                                data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
+
+                                screen.Clear();
+                                screen.Update(("Keyword: " + keyword).ToCharArray(), 3, 1);
+                            }
+                        }
+
                         break;
 
                     default:
@@ -286,6 +357,37 @@ namespace Wagon_Tracker_Combined
 
                 // If the wagon matches the keyword, add it to the output data
                 if (keyword == "" || (allWagonsData.Values[i].Contains(keyword) || allWagonsData.Values[i].Contains(keyword.ToLower()) || allWagonsData.Values[i].Contains(keyword.ToUpper())))
+                {
+                    displayData.Add(allWagonsData.Keys[i] + " - " + allWagonsData.Values[i]);
+                }
+            }
+
+            return displayData;
+        }
+
+        private static List<string> getDisplayData(List<string> wagons, ref SortedList<string, string> allWagonsData, int numClasses)
+        {
+            List<string> displayData = new List<string>();
+
+            string lastClass = "";
+            int classCounter = 0;
+
+            for (int i = 0; i < allWagonsData.Count; i++)
+            {
+                // Check if the next wagon is from a new class, so as to add the heading line to the output data
+                string nextClass = allWagonsData.Keys[i].Substring(0, allWagonsData.Keys[i].IndexOfAny("123456789".ToCharArray()));
+
+                if (nextClass != lastClass)
+                {
+                    lastClass = nextClass;
+
+                    displayData.Add(string.Format("Class {0} ({1}/{2})", nextClass, classCounter + 1, numClasses));
+
+                    classCounter++;
+                }
+
+                // If the wagon matches the keyword, add it to the output data
+                if (wagons.Contains(allWagonsData.Keys[i]))
                 {
                     displayData.Add(allWagonsData.Keys[i] + " - " + allWagonsData.Values[i]);
                 }
