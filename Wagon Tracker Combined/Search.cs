@@ -110,9 +110,18 @@ namespace Wagon_Tracker_Combined
             }
         }
 
-        public Search GetSearch(string name)
+        /*public Search GetSearch(string name)
         {
             return searches[name];
+        }*/
+
+        public Search Choose(ref Screen screen)
+        {
+            Textbox optionsBox = new Textbox(20, 5, 5, 3);
+
+            List<string> searchNames = new List<string>(searches.Keys);
+
+            return searches[searchNames[Program.selectFromList(ref screen, ref optionsBox, searchNames, 0, new List<ConsoleKey>())]];
         }
     }
 }

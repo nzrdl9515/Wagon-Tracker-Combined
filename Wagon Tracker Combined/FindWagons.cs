@@ -90,7 +90,7 @@ namespace Wagon_Tracker_Combined
 
                     Textbox yesNoBox = new Textbox(5, 2, 4, 4);
 
-                    switch(Program.selectFromList(ref screen, ref yesNoBox, new List<string>() { "Yes", "No" }, 0))
+                    switch(Program.selectFromList(ref screen, ref yesNoBox, new List<string>() { "Yes", "No" }, 0, new List<ConsoleKey>()))
                     {
                         case 0:
                             // Perform automatic search in the range identified

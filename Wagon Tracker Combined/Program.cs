@@ -80,7 +80,7 @@ namespace Wagon_Tracker_Combined
             {
                 screen.Clear();
                 screen.Update("Choose function".ToCharArray(), 3, 1);
-                option = selectFromList(ref screen, ref box, options, 0);
+                option = selectFromList(ref screen, ref box, options, 0, new List<ConsoleKey>() { ConsoleKey.Escape });
 
 
                 switch (option)
@@ -102,8 +102,8 @@ namespace Wagon_Tracker_Combined
                         break;
 
                     case 2:
-                        
 
+                        DownloadWagons.RunSaved(ref screen, ref searches);
 
                         break;
 
@@ -821,7 +821,7 @@ namespace Wagon_Tracker_Combined
             return output;
         }
 
-        public static int selectFromList(ref Screen screen, ref Textbox box, List<string> options, int startIndex)
+        public static int selectFromList(ref Screen screen, ref Textbox box, List<string> options, int startIndex, List<ConsoleKey> allowedKeys)
         {
             int scrollPosition = 0;
             int position;
@@ -902,11 +902,16 @@ namespace Wagon_Tracker_Combined
 
                     case ConsoleKey.Escape:
 
-                        return -1;
+                        if (allowedKeys.Contains(ConsoleKey.Escape))
+                        {
+                            return -1;
+                        }
+
+                        break;
 
                     case ConsoleKey.N:
 
-                        if (key.Modifiers == ConsoleModifiers.Control)
+                        if (key.Modifiers == ConsoleModifiers.Control && allowedKeys.Contains(ConsoleKey.N))
                         {
                             return -2;
                         }

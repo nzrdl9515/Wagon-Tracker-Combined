@@ -35,14 +35,22 @@ namespace Wagon_Tracker_Combined
             run(selectedOptions, keyword, ref screen, ref searches);
         }
 
-        public static void RunSaved(string saveName, ref Screen screen, ref Searches searches)
+        public static void RunSaved(ref Screen screen, ref Searches searches)
         {
-            run(searches.GetSearch(saveName).Wagons, searches.GetSearch(saveName).Keyword, ref screen, ref searches);
+            screen.Clear();
+
+            screen.Update(("Choose saved search").ToCharArray(), 3, 1);
+            Search search = searches.Choose(ref screen);
+            
+            screen.Clear();
+
+            run(search.Wagons, search.Keyword, ref screen, ref searches);
         }
 
         private static void run(List<string> wagonClasses, string keyword, ref Screen screen, ref Searches searches)
         {
             Textbox keywordBox = new Textbox(20, 5, 5, 3);
+            keywordBox.UpdateData(new List<string>() { keyword }, false);
             ConsoleKeyInfo key;
             int scrollPosition = 0;
             bool inUniqueTrains = false;
@@ -61,23 +69,6 @@ namespace Wagon_Tracker_Combined
             Download(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
 
             screen.Clear();
-
-            /*screen.Clear();
-            screen.Update("Input search parameter".ToCharArray(), 3, 1);
-            keywordBox.PrintData(ref screen, true);
-            keywordBox.SetCursor();
-
-            while ((key = Console.ReadKey(true)).Key != ConsoleKey.Enter)
-            {
-                keywordBox.KeyPressLoop(key, ref screen, true);
-
-                keywordBox.SetCursor();
-            }
-
-            foreach (char i in keywordBox.GetData())
-            {
-                keyword += i;
-            }*/
 
             Textbox displayBox = new Textbox(screen.Width - 8, screen.Height - 6, 5, 4);
 
@@ -141,28 +132,10 @@ namespace Wagon_Tracker_Combined
                         break;
 
                     case ConsoleKey.F:
+                    case ConsoleKey.G:
                         if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
                         {
-                            /*screen.Clear();
-                            screen.Update("Input new search parameter".ToCharArray(), 3, 1);
-                            keywordBox.PrintData(ref screen, true);
-                            keywordBox.SetCursor();
-
-                            while ((key = Console.ReadKey(true)).Key != ConsoleKey.Enter)
-                            {
-                                keywordBox.KeyPressLoop(key, ref screen, true);
-
-                                keywordBox.SetCursor();
-                            }
-
-                            keyword = "";
-                            foreach (char c in keywordBox.GetData())
-                            {
-                                keyword += c;
-                            }*/
-
                             keyword = keywordBox.GetKeyboardInput("Input new search parameter", ref screen, true);
-
 
                             scrollPosition = 0;
 
@@ -191,7 +164,7 @@ namespace Wagon_Tracker_Combined
                             screen.Update(string.Format("Confirm {0} wagons to continuously download", contWagons.Count).ToCharArray(), 3, 1);
 
                             Textbox selectBox = new Textbox(50, 2, 5, 3);
-                            if(Program.selectFromList(ref screen, ref selectBox, new List<string> { "No", "Yes" }, 0) == 1)
+                            if(Program.selectFromList(ref screen, ref selectBox, new List<string> { "No", "Yes" }, 0, new List<ConsoleKey>()) == 1)
                             {
                                 foreach(string wagon in contWagons)
                                 {
@@ -270,7 +243,6 @@ namespace Wagon_Tracker_Combined
                             if (previousSearchName == null)
                             {
                                 // Search hasn't already been saved under a different name, so now just check that the name is unique
-
                                 while (!searches.CheckNameUnique(searchName))
                                 {
                                     searchName = saveSearchBox.GetKeyboardInput("A different save has the same name. Input a new name for this save.", ref screen, true);
@@ -296,7 +268,7 @@ namespace Wagon_Tracker_Combined
                                     screen.Update(string.Format("This search has already been saved as '{0}'. Re-name this saved search as '{1}'?", previousSearchName, searchName).ToCharArray(), 3, 1);
 
                                     Textbox selectBox = new Textbox(50, 2, 5, 3);
-                                    if(Program.selectFromList(ref screen, ref selectBox, new List<string> { "No", "Yes" }, 0) == 1)
+                                    if(Program.selectFromList(ref screen, ref selectBox, new List<string> { "No", "Yes" }, 0, new List<ConsoleKey>()) == 1)
                                     {
                                         searches.UpdateSearchName(previousSearchName, searchName);
                                     }
@@ -308,7 +280,7 @@ namespace Wagon_Tracker_Combined
                         break;
 
                     case ConsoleKey.T: // Search for all the unique trains in the data
-                        if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
+                        if (key.Modifiers == ConsoleModifiers.Control)
                         {
                             if (!inUniqueTrains)
                             {
@@ -392,10 +364,22 @@ namespace Wagon_Tracker_Combined
                     classCounter++;
                 }
 
-                // If the wagon matches the keyword, add it to the output data
-                if (keyword == "" || (allWagonsData.Values[i].Contains(keyword) || allWagonsData.Values[i].Contains(keyword.ToLower()) || allWagonsData.Values[i].Contains(keyword.ToUpper())))
+                if (keyword.Length > 0 && keyword[0] == '!')
                 {
-                    displayData.Add(allWagonsData.Keys[i] + " - " + allWagonsData.Values[i]);
+                    string keyword2 = keyword.Substring(1);
+                    // Show if the wagon string does NOT contain the keyword
+                    if(keyword == "!" || !allWagonsData.Values[i].ToLower().Contains(keyword2.ToLower()))
+                    {
+                        displayData.Add(allWagonsData.Keys[i] + " - " + allWagonsData.Values[i]);
+                    }
+                }
+                else
+                {
+                    // Show if the wagon string DOES contain the keyword
+                    if (keyword == "" || allWagonsData.Values[i].ToLower().Contains(keyword.ToLower()))
+                    {
+                        displayData.Add(allWagonsData.Keys[i] + " - " + allWagonsData.Values[i]);
+                    }
                 }
             }
 

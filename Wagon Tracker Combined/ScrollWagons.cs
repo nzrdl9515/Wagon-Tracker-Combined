@@ -116,7 +116,7 @@ namespace Wagon_Tracker_Combined
                             screen.Clear();
 
                             screen.Update("Select wagon".ToCharArray(), 3, 1);
-                            int newWagonIndex = Program.selectFromList(ref screen, ref selectBox, data.GetWagons(), 0);
+                            int newWagonIndex = Program.selectFromList(ref screen, ref selectBox, data.GetWagons(), 0, new List<ConsoleKey>() { ConsoleKey.Escape });
                             if(newWagonIndex != -1)
                             {
                                 wagonIndex = newWagonIndex;

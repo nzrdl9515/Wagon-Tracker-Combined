@@ -144,6 +144,42 @@ namespace Wagon_Tracker_Combined
             }
         }
 
+        public void UpdateData(List<string> input, bool lastNewLine/*, bool cursorAtStart*/)
+        {
+            data = new List<char>();
+            foreach (string j in input)
+            {
+                foreach (char i in j)
+                {
+                    data.Add(i);
+                }
+                data.Add('\n');
+            }
+
+            if (!lastNewLine)
+            {
+                data.RemoveAt(data.Count - 1);
+            }
+
+            // ***************** A potential extension to place the cursor at the end of box when initialising, rather than the start *******************
+
+            /*if(!cursorAtStart)
+            {
+                scrollPosition = data.Count(x => x == '\n');
+
+                List<int> newlineIndices = new List<int>();
+
+                int index = -1;
+
+                while((index = data.IndexOf('\n', index + 1)) != -1)
+                {
+                    newlineIndices.Add(index);
+                }
+
+                linePos = newlineIndices[newlineIndices.Count - 1] - 1;
+            }*/
+        }
+
         // ┌─┐
         // │ │
         // └─┘
@@ -335,6 +371,10 @@ namespace Wagon_Tracker_Combined
                 data.Insert(pos, '\n');
                 pos++; // Move cursor
                 keepLinePos = -1;
+            }
+            else if(key.Key == ConsoleKey.Escape || key.Key == ConsoleKey.End || key.Key == ConsoleKey.Insert || key.Key == ConsoleKey.Home || key.Key == ConsoleKey.PageUp || key.Key == ConsoleKey.PageDown)
+            {
+                // List of disallowed keys that have no effect
             }
             else
             {
