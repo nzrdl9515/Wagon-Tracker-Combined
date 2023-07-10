@@ -97,20 +97,8 @@ namespace Wagon_Tracker_Combined
 
                     case 1:
 
-                        string[] wagonClasses = File.ReadAllLines(FilePath + "wagon_classes.txt");
+                        DownloadWagons.RunManual(ref screen, ref searches);
 
-                        Textbox rightBox = new Textbox(10, 30, 20, 3);
-                        Textbox leftBox = new Textbox(10, 30, 5, 3);
-
-                        screen.Clear();
-                        screen.Update("Select wagons".ToCharArray(), 3, 1);
-                        List<string> selectedOptions = selectMultipleFromList(ref screen, ref leftBox, ref rightBox, new List<string>(wagonClasses));
-
-                        if (selectedOptions.Count != 0 && selectedOptions[0] != "escape")
-                        {
-                            screen.Clear();
-                            DownloadWagons.Run(selectedOptions, ref screen, ref searches);
-                        }
                         break;
 
                     case 2:
@@ -233,8 +221,8 @@ namespace Wagon_Tracker_Combined
                                         // Then re-write the text file
                                         // Then return to the view contWagons screen
 
-                                        rightBox = new Textbox(10, 30, 20, 3);
-                                        leftBox = new Textbox(10, 30, 5, 3);
+                                        Textbox rightBox = new Textbox(10, 30, 20, 3);
+                                        Textbox leftBox = new Textbox(10, 30, 5, 3);
 
                                         screen.Clear();
                                         screen.Update("Select wagons to remove from continuous download".ToCharArray(), 3, 1);

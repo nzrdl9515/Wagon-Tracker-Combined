@@ -10,7 +10,37 @@ namespace Wagon_Tracker_Combined
 {
     static class DownloadWagons
     {
-        public static void Run(List<string> wagonClasses, ref Screen screen, ref Searches searches)
+        public static void RunManual(ref Screen screen, ref Searches searches)
+        {
+            Textbox keywordBox = new Textbox(20, 5, 5, 3);
+            Textbox rightBox = new Textbox(10, 30, 20, 3);
+            Textbox leftBox = new Textbox(10, 30, 5, 3);
+            string[] wagonClasses = File.ReadAllLines("wagon_classes.txt");
+
+            screen.Clear();
+            screen.Update("Select wagons".ToCharArray(), 3, 1);
+            List<string> selectedOptions = new List<string>();// = Program.selectMultipleFromList(ref screen, ref leftBox, ref rightBox, new List<string>(wagonClasses));
+
+            while(selectedOptions.Count == 0 || selectedOptions[0] == "escape")
+            {
+                selectedOptions = Program.selectMultipleFromList(ref screen, ref leftBox, ref rightBox, new List<string>(wagonClasses));
+            }
+
+            screen.Clear();
+
+            string keyword = keywordBox.GetKeyboardInput("Input search parameter", ref screen, true);
+
+            screen.Clear();
+
+            run(selectedOptions, keyword, ref screen, ref searches);
+        }
+
+        public static void RunSaved(string saveName, ref Screen screen, ref Searches searches)
+        {
+            run(searches.GetSearch(saveName).Wagons, searches.GetSearch(saveName).Keyword, ref screen, ref searches);
+        }
+
+        private static void run(List<string> wagonClasses, string keyword, ref Screen screen, ref Searches searches)
         {
             Textbox keywordBox = new Textbox(20, 5, 5, 3);
             ConsoleKeyInfo key;
@@ -30,6 +60,8 @@ namespace Wagon_Tracker_Combined
 
             Download(new List<string>(allWagonsData.Keys), ref allWagonsData, ref screen);
 
+            screen.Clear();
+
             /*screen.Clear();
             screen.Update("Input search parameter".ToCharArray(), 3, 1);
             keywordBox.PrintData(ref screen, true);
@@ -47,9 +79,6 @@ namespace Wagon_Tracker_Combined
                 keyword += i;
             }*/
 
-            string keyword = keywordBox.GetKeyboardInput("Input search parameter", ref screen, true);
-
-            screen.Clear();
             Textbox displayBox = new Textbox(screen.Width - 8, screen.Height - 6, 5, 4);
 
             data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
@@ -226,7 +255,9 @@ namespace Wagon_Tracker_Combined
                         {
                             screen.Clear();
 
-                            string searchName = keywordBox.GetKeyboardInput("Input name for saved search", ref screen, true);
+                            Textbox saveSearchBox = new Textbox(20, 5, 5, 3);
+
+                            string searchName = saveSearchBox.GetKeyboardInput("Input a name for save", ref screen, true);
                             string wagonsToSave = wagonClasses[0];
 
                             for(int i = 1; i < wagonClasses.Count; i++)
@@ -238,7 +269,13 @@ namespace Wagon_Tracker_Combined
 
                             if (previousSearchName == null)
                             {
-                                // Search hasn't already been saved under a different name, so happily add a new search to the existing collection
+                                // Search hasn't already been saved under a different name, so now just check that the name is unique
+
+                                while (!searches.CheckNameUnique(searchName))
+                                {
+                                    searchName = saveSearchBox.GetKeyboardInput("A different save has the same name. Input a new name for this save.", ref screen, true);
+                                }
+
                                 searches.AddSearch(searchName, wagonsToSave, keyword);
                             }
                             else // Search has already been saved

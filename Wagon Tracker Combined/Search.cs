@@ -51,13 +51,21 @@ namespace Wagon_Tracker_Combined
         public Searches()
         {
             searches = new Dictionary<string, Search>();
-            string[] searchesFile = File.ReadAllLines("searches.txt");
-            
 
-            for(int i = 0; i < searchesFile.Length; i += 3)
+            if (File.Exists("searches.txt"))
             {
-                searches.Add(searchesFile[i], new Search(searchesFile[i + 1], searchesFile[i + 2]));
+                string[] searchesFile = File.ReadAllLines("searches.txt");
+
+                for (int i = 0; i < searchesFile.Length; i += 3)
+                {
+                    searches.Add(searchesFile[i], new Search(searchesFile[i + 1], searchesFile[i + 2]));
+                }
             }
+        }
+
+        public bool CheckNameUnique(string name)
+        {
+            return !searches.ContainsKey(name);
         }
 
         public string CheckExistingSearch(string wagons, string keyword)
@@ -100,6 +108,11 @@ namespace Wagon_Tracker_Combined
                 sw.WriteLine(wagons);
                 sw.WriteLine(keyword);
             }
+        }
+
+        public Search GetSearch(string name)
+        {
+            return searches[name];
         }
     }
 }
