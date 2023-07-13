@@ -267,7 +267,7 @@ namespace Wagon_Tracker_Combined
                         Textbox box = new Textbox(20, 5, 5, 3);
                         scrollPosition = 0;
                         string location = "";
-                        string[] locationFile = File.ReadAllLines(Program.FilePath + "locations.txt");
+                        string[] locationFile = File.ReadAllLines("locations.txt");
 
                         while (Array.FindIndex(locationFile, s => s.Contains(location) && s.IndexOf(location) + location.Length == s.Length) == -1)
                         {

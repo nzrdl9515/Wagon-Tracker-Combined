@@ -20,7 +20,7 @@ namespace Wagon_Tracker_Combined
         departed,
         unableToLocate,
         notSet
-        // Add 500 internal server error and off rail
+        // Add 500 internal server error
     }
 
     class Instruction
@@ -40,9 +40,7 @@ namespace Wagon_Tracker_Combined
         public static List<Instruction> DownloadInstructions;
         public static bool FileLocked;
         public static bool FileInUse;
-        //public const string FilePath = "C:/Users/johnv/OneDrive/Documents/My Stuff/Wagon Tracker Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //     Surface
-        //public const string FilePath = "C:/Users/John/source/repos/nzrdl9515/Wagon-Tracker-Combined/Wagon Tracker Combined/bin/Debug/net5.0/"; //            Desktop
-        public const string FilePath = "";
+        //public const string FilePath = "";
         public const int NumClients = 10;
 
         static void Main(string[] args)
@@ -82,14 +80,13 @@ namespace Wagon_Tracker_Combined
                 screen.Update("Choose function".ToCharArray(), 3, 1);
                 option = selectFromList(ref screen, ref box, options, 0, new List<ConsoleKey>() { ConsoleKey.Escape });
 
-
                 switch (option)
                 {
                     case 0:
 
                         Textbox searchBox = new Textbox(20, 5, 5, 3);
 
-                        string[] searchWagons = searchBox.GetKeyboardInput("Input wagons to download", ref screen, true).Replace(" ", "").Split(',');
+                        string[] searchWagons = searchBox.GetKeyboardInput("Input wagon classes to download", ref screen, true).Replace(" ", "").Split(',');
 
                         FindWagons.Begin(searchWagons, ref screen);
 
@@ -110,14 +107,14 @@ namespace Wagon_Tracker_Combined
                     case 3:
 
                         screen.Clear();
-                        ScrollWagons.Run(new Data(FilePath + "data.txt"), ref screen);
+                        ScrollWagons.Run(new Data("data.txt"), ref screen);
 
                         break;
 
                     case 4:
 
                         screen.Clear();
-                        FindTrains.Run(new Data(FilePath + "data.txt"), ref screen);
+                        FindTrains.Run(new Data("data.txt"), ref screen);
 
                         break;
 
@@ -130,7 +127,7 @@ namespace Wagon_Tracker_Combined
 
                         SortedList<string, string> contWagonsData = new SortedList<string, string>(new StringLogicalComparer());
 
-                        DownloadWagons.Download(new List<string>(File.ReadAllLines(FilePath + "continuous_download_wagons.txt")), ref contWagonsData, ref screen);
+                        DownloadWagons.Download(new List<string>(File.ReadAllLines("continuous_download_wagons.txt")), ref contWagonsData, ref screen);
                         screen.Clear();
 
                         List<string> boxOutput = new List<string>();
@@ -202,7 +199,7 @@ namespace Wagon_Tracker_Combined
                                         {
                                             string wagonClass = wagon.Substring(0, wagon.IndexOfAny("0123456789".ToCharArray()));
 
-                                            if (File.ReadAllLines(FilePath + "wagons/" + wagonClass + ".txt").Contains(wagon))
+                                            if (File.ReadAllLines("wagons/" + wagonClass + ".txt").Contains(wagon))
                                             {
                                                 DownloadInstructions.Add(new Instruction("addwagon " + wagon));
                                             }
@@ -283,6 +280,14 @@ namespace Wagon_Tracker_Combined
                         // ***** Worth double checking whether intentional to close *****
                         // **************************************************************
 
+                        Textbox yesNoBox = new Textbox(5, 2, 5, 4);
+                        screen.Clear();
+                        screen.Update("Are you sure you want to quit?".ToCharArray(), 3, 1);
+                        if (selectFromList(ref screen, ref yesNoBox, new List<string>() { "Yes", "No" }, 1, new List<ConsoleKey>()) != 0)
+                        {
+                            option = 0;
+                        }
+
                         break;
 
                     case -2:
@@ -315,7 +320,7 @@ namespace Wagon_Tracker_Combined
                 }
             }*/
 
-            string[] contWagons = File.ReadAllLines(FilePath + "continuous_download_wagons.txt");
+            string[] contWagons = File.ReadAllLines("continuous_download_wagons.txt");
             //int numWagons = contWagons.Length;
 
             for(int i = 0; i < contWagons.Length; i++)
@@ -358,7 +363,7 @@ namespace Wagon_Tracker_Combined
                                         data.Add(wagon, "");
                                     }
 
-                                    File.WriteAllLines(FilePath + "continuous_download_wagons.txt", data.Keys);
+                                    File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
 
                                     break;
 
@@ -371,7 +376,7 @@ namespace Wagon_Tracker_Combined
                                         data.Remove(wagon);
                                     }
 
-                                    File.WriteAllLines(FilePath + "continuous_download_wagons.txt", data.Keys);
+                                    File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
 
                                     break;
 

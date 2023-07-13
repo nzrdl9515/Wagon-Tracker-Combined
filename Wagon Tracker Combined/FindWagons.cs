@@ -124,7 +124,7 @@ namespace Wagon_Tracker_Combined
                             screen.Update(string.Format("Performing automatic search for {0} wagons", wagonClasses[j]).ToCharArray(), 3, 1);
                             Download(ref searchWagons, ref screen);
 
-                            using (StreamWriter sw = new StreamWriter(wagonClasses[j] + ".txt"))
+                            /*using (StreamWriter sw = new StreamWriter(wagonClasses[j] + ".txt"))
                             {
                                 for (int i = 0; i < wagons.Count; i++)
                                 {
@@ -133,7 +133,7 @@ namespace Wagon_Tracker_Combined
                                         sw.WriteLine(wagons[i]);
                                     }
                                 }
-                            }
+                            }*/
 
                             break;
 
@@ -166,7 +166,7 @@ namespace Wagon_Tracker_Combined
                             screen.Update(string.Format("Performing manual search for {0} wagons", wagonClasses[j]).ToCharArray(), 3, 1);
                             Download(ref searchWagons, ref screen);
 
-                            using (StreamWriter sw = new StreamWriter(wagonClasses[j] + ".txt"))
+                            /*using (StreamWriter sw = new StreamWriter(wagonClasses[j] + ".txt"))
                             {
                                 for (int i = 0; i < wagons.Count; i++)
                                 {
@@ -175,14 +175,52 @@ namespace Wagon_Tracker_Combined
                                         sw.WriteLine(wagons[i]);
                                     }
                                 }
-                            }
+                            }*/
 
 
 
                             break;
                     }
 
+                    List<string> newFile = new List<string>();
 
+                    foreach (string wagon in wagons)
+                    {
+                        if (!searchWagons[wagon].Contains("\"\""))
+                        {
+                            newFile.Add(wagon);
+                        }
+                    }
+
+                    // Check if there is an existing file for the same wagon class.
+                    if (File.Exists(string.Format("wagons/{0}.txt", wagonClasses[j])))
+                    {
+                        string[] oldFile = File.ReadAllLines(string.Format("wagons/{0}.txt", wagonClasses[j]));
+                        WebClient client = new WebClient();
+
+                        foreach(string wagon in oldFile)
+                        {
+                            if (!newFile.Contains(wagon))
+                            {
+                                // ******************* Consider optimising this by using the fast downloader *********************
+                                if(!client.DownloadString("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagon).Contains("\"\""))
+                                {
+                                    newFile.Add(wagon);
+                                }
+                            }
+                        }
+                    }
+                    else
+                    {
+                        // No file, so we need to update wagon_classes.txt
+                        List<string> allWagonClasses = new List<string>(File.ReadAllLines("wagon_classes.txt"));
+                        allWagonClasses.Add(wagonClasses[j]);
+                        allWagonClasses.Sort();
+                        File.WriteAllLines("wagon_classes.txt", allWagonClasses);
+                    }
+
+                    newFile.Sort();
+                    File.WriteAllLines(string.Format("wagons/{0}.txt", wagonClasses[j]), newFile);
                 }
 
 

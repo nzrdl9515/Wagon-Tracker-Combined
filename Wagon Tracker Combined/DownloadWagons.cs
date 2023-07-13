@@ -70,7 +70,7 @@ namespace Wagon_Tracker_Combined
 
             screen.Clear();
 
-            Textbox displayBox = new Textbox(screen.Width - 8, screen.Height - 6, 5, 4);
+            Textbox displayBox = new Textbox(screen.Width - 8/*50*/, screen.Height - 6, 5, 4); // - 50 used when creating output for the instruction manual.
 
             data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
 
