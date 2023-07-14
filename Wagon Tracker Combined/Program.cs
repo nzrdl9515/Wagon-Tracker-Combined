@@ -40,7 +40,6 @@ namespace Wagon_Tracker_Combined
         public static List<Instruction> DownloadInstructions;
         public static bool FileLocked;
         public static bool FileInUse;
-        //public const string FilePath = "";
         public const int NumClients = 10;
 
         static void Main(string[] args)
@@ -122,8 +121,6 @@ namespace Wagon_Tracker_Combined
                         // View wagons in download list
                         screen.Clear();
                         screen.Update("Downloading latest information".ToCharArray(), 3, 1);
-
-                        //List<string> contWagons = new List<string>(File.ReadAllLines(FilePath + "continuous_download_wagons.txt"));
 
                         SortedList<string, string> contWagonsData = new SortedList<string, string>(new StringLogicalComparer());
 
@@ -266,19 +263,8 @@ namespace Wagon_Tracker_Combined
 
                         break;
 
-                    // This function is now included in other places
-                    /*case 5:
-
-                        // Add new wagons to download list
-
-                        break;*/
-
                     case -1:
                         // Escape
-
-                        // **************************************************************
-                        // ***** Worth double checking whether intentional to close *****
-                        // **************************************************************
 
                         Textbox yesNoBox = new Textbox(5, 2, 5, 4);
                         screen.Clear();
