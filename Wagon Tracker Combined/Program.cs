@@ -5,6 +5,7 @@ using System.Threading.Tasks;
 using System.Linq;
 using System.Net;
 using System.Collections;
+using System.Diagnostics;
 
 namespace Wagon_Tracker_Combined
 {
@@ -53,8 +54,7 @@ namespace Wagon_Tracker_Combined
             FileInUse = false;
             Screen screen = new Screen(200, 50);
             Textbox box = new Textbox(50, 6, 5, 3);
-            DownloadInstructions = new List<Instruction>();
-            DownloadInstructions.Add(new Instruction("start"));
+            DownloadInstructions = new List<Instruction> { new Instruction("start") };
             Searches searches = new Searches();
 
             List<string> options = new List<string>(new string[] {
@@ -266,7 +266,7 @@ namespace Wagon_Tracker_Combined
                     case -1:
                         // Escape
 
-                        Textbox yesNoBox = new Textbox(5, 2, 5, 4);
+                        Textbox yesNoBox = new Textbox(5, 2, 5, 3);
                         screen.Clear();
                         screen.Update("Are you sure you want to quit?".ToCharArray(), 3, 1);
                         if (selectFromList(ref screen, ref yesNoBox, new List<string>() { "Yes", "No" }, 1, new List<ConsoleKey>()) != 0)
@@ -321,165 +321,182 @@ namespace Wagon_Tracker_Combined
 
             await Task.Run(() =>
             {
-                while (true)
+            while (true)
+            {
+                if (DownloadInstructions.Last() != lastInstruction)
                 {
-                    if (DownloadInstructions.Last() != lastInstruction)
+                    for (int i = DownloadInstructions.IndexOf(lastInstruction) + 1; i < DownloadInstructions.Count(); i++)
                     {
-                        for (int i = DownloadInstructions.IndexOf(lastInstruction) + 1; i < DownloadInstructions.Count(); i++)
+                        // ****************************************************
+                        // *************** PERFORM INSTRUCTIONS ***************
+                        // ****************************************************
+
+                        int index = DownloadInstructions[i].Command.IndexOf(" ");
+
+                        if (index == -1)
                         {
-                            // ****************************************************
-                            // *************** PERFORM INSTRUCTIONS ***************
-                            // ****************************************************
-
-                            int index = DownloadInstructions[i].Command.IndexOf(" ");
-
-                            if(index == -1)
-                            {
-                                index = DownloadInstructions[i].Command.Length;
-                            }
-
-                            switch (DownloadInstructions[i].Command.Substring(0, index))
-                            {
-                                case "addwagon":
-
-                                    string wagon = DownloadInstructions[i].Command.Substring(index + 1);
-
-                                    if (!data.ContainsKey(wagon))
-                                    {
-                                        data.Add(wagon, "");
-                                    }
-
-                                    File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
-
-                                    break;
-
-                                case "removewagon":
-
-                                    wagon = DownloadInstructions[i].Command.Substring(index + 1);
-
-                                    if (data.ContainsKey(wagon))
-                                    {
-                                        data.Remove(wagon);
-                                    }
-
-                                    File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
-
-                                    break;
-
-                                /*case "viewwagons":
-
-                                    string wagonList = data.Keys[0];
-
-                                    for(int j = 1; j < data.Count; j++)
-                                    {
-                                        wagonList += (',' + data.Keys[j]);
-                                    }
-
-                                    DownloadInstructions.Add(new Instruction(wagonList));
-
-                                    break;*/
-
-                                default:
-
-                                    break;
-                            }
+                            index = DownloadInstructions[i].Command.Length;
                         }
 
-                        lastInstruction = DownloadInstructions.Last();
+                        switch (DownloadInstructions[i].Command.Substring(0, index))
+                        {
+                            case "addwagon":
+
+                                string wagon = DownloadInstructions[i].Command.Substring(index + 1);
+
+                                if (!data.ContainsKey(wagon))
+                                {
+                                    data.Add(wagon, "");
+                                }
+
+                                File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
+
+                                break;
+
+                            case "removewagon":
+
+                                wagon = DownloadInstructions[i].Command.Substring(index + 1);
+
+                                if (data.ContainsKey(wagon))
+                                {
+                                    data.Remove(wagon);
+                                }
+
+                                File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
+
+                                break;
+
+                            /*case "viewwagons":
+
+                                string wagonList = data.Keys[0];
+
+                                for(int j = 1; j < data.Count; j++)
+                                {
+                                    wagonList += (',' + data.Keys[j]);
+                                }
+
+                                DownloadInstructions.Add(new Instruction(wagonList));
+
+                                break;*/
+
+                            default:
+
+                                break;
+                        }
                     }
 
-                    if (DateTime.Now > last.AddMinutes(5.0d))
+                    lastInstruction = DownloadInstructions.Last();
+                }
+
+                if (DateTime.Now > last.AddMinutes(5.0d))
+                {
+                    last = last.AddMinutes(5);
+                    //allData = new List<string>();
+
+                    SortedList<string, string> newData = new SortedList<string, string>(new StringLogicalComparer());
+
+                    Stopwatch sw = Stopwatch.StartNew();
+
+                    DownloadWagons.Download(new List<string>(data.Keys), ref newData);
+
+                    sw.Stop();
+
+                    File.WriteAllText("dl_time.txt", ((double)sw.ElapsedMilliseconds / (double)data.Count).ToString());
+
+                    List<string> dataToAppend = new List<string>();
+
+                    for(int i = 0; i < newData.Count; i++)
                     {
-                        last = last.AddMinutes(5);
-                        //allData = new List<string>();
-
-                        SortedList<string, string> newData = new SortedList<string, string>(new StringLogicalComparer());
-
-                        DownloadWagons.Download(new List<string>(data.Keys), ref newData);
-
-                        List<string> dataToAppend = new List<string>();
-
-                        for(int i = 0; i < newData.Count; i++)
+                        if(newData[newData.Keys[i]] != data[newData.Keys[i]])
                         {
-                            if(newData[newData.Keys[i]] != data[newData.Keys[i]])
-                            {
-                                data[newData.Keys[i]] = newData[newData.Keys[i]];
+                            data[newData.Keys[i]] = newData[newData.Keys[i]];
 
-                                dataToAppend.Add(newData.Keys[i] + " - " + DateTime.Now.ToString("g") + " - " + newData[newData.Keys[i]]);
-                            }
+                            dataToAppend.Add(newData.Keys[i] + " - " + DateTime.Now.ToString("g") + " - " + newData[newData.Keys[i]]);
+                        }
+                    }
+
+                    /*for (int i = 0; i < wagons.Count; i++)
+                    {
+                        string downloadString;
+
+                        try
+                        {
+                            downloadString = client.DownloadString("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagons[i]);
+                        }
+                        catch (Exception e)
+                        {
+                            downloadString = e.Message;
                         }
 
-                        /*for (int i = 0; i < wagons.Count; i++)
+                        string fileLine = wagons[i] + " - " + DateTime.Now.ToString("g") + " - " + downloadString;
+
+                        if (downloadString != lastData[wagons[i]])
                         {
-                            string downloadString;
-
-                            try
-                            {
-                                downloadString = client.DownloadString("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagons[i]);
-                            }
-                            catch (Exception e)
-                            {
-                                downloadString = e.Message;
-                            }
-
-                            string fileLine = wagons[i] + " - " + DateTime.Now.ToString("g") + " - " + downloadString;
-
-                            if (downloadString != lastData[wagons[i]])
-                            {
-                                lastData[wagons[i]] = downloadString;
+                            lastData[wagons[i]] = downloadString;
                                 
-                                allData.Add(fileLine);
-                            }
-                        }*/
-
-                        // To save the file
-                        if (!FileLocked)
-                        {
-                            FileInUse = true;
-
-                            File.AppendAllLines("data.txt", dataToAppend);
-
-                            FileInUse = false;
+                            allData.Add(fileLine);
                         }
-                        else
-                        {
-                            while (FileLocked)
-                            {
-                                System.Threading.Thread.Sleep(500);
-                            }
+                    }*/
 
-                            FileInUse = true;
-
-                            File.AppendAllLines("data.txt", dataToAppend);
-
-                            FileInUse = false;
-                        }
-                    }
-
-                    // Remove instructions that are more than 10 minutes old, but making sure the instruction list is NOT empty
-                    // ****************************************************************************** AddMinutes(10) ***********
-                    if (DownloadInstructions.Count > 1 && DateTime.Now > DownloadInstructions[0].Time.AddMinutes(10)) // *******
+                    // To save the file
+                    if (!FileLocked)
                     {
-                        for (int i = DownloadInstructions.Count - 2; i >=0 ; i--)
+                        FileInUse = true;
+
+                        File.AppendAllLines("data.txt", dataToAppend);
+
+                        FileInUse = false;
+                    }
+                    else
+                    {
+                        while (FileLocked)
                         {
-                            if (DateTime.Now > DownloadInstructions[i].Time.AddSeconds(5))
-                            {
-                                DownloadInstructions.RemoveAt(i);
-                            }
+                            System.Threading.Thread.Sleep(500);
+                        }
+
+                        FileInUse = true;
+
+                        File.AppendAllLines("data.txt", dataToAppend);
+
+                        FileInUse = false;
+                    }
+                }
+
+                // Remove instructions that are more than 10 minutes old, but making sure the instruction list is NOT empty
+                // ****************************************************************************** AddMinutes(10) ***********
+                if (DownloadInstructions.Count > 1 && DateTime.Now > DownloadInstructions[0].Time.AddMinutes(10)) // *******
+                {
+                    for (int i = DownloadInstructions.Count - 2; i >=0 ; i--)
+                    {
+                        if (DateTime.Now > DownloadInstructions[i].Time.AddSeconds(5))
+                        {
+                            DownloadInstructions.RemoveAt(i);
                         }
                     }
+                }
 
-                    System.Threading.Thread.Sleep(500);
+                System.Threading.Thread.Sleep(500);
                 }
             });
         }
 
         public static List<string> selectMultipleFromList(ref Screen screen, ref Textbox leftBox, ref Textbox rightBox, List<string> options)
         {
+            return _selectMultipleFromList(ref screen, ref leftBox, ref rightBox, options, new List<int>(), false);
+        }
+
+        public static List<string> selectMultipleFromList(ref Screen screen, ref Textbox leftBox, ref Textbox rightBox, List<string> options, List<int> optionsCount)
+        {
+            return _selectMultipleFromList(ref screen, ref leftBox, ref rightBox, options, optionsCount, true);
+        }
+
+        private static List<string> _selectMultipleFromList(ref Screen screen, ref Textbox leftBox, ref Textbox rightBox, List<string> options, List<int> optionsCount, bool showPredictor)
+        {
             int leftScrollPosition = 0;
             int rightScrollPosition = 0;
             int leftPosition = 0;
             int rightPosition = 0;
+            int downloadTime = 0;
             bool cursorInLeftBox = true;
 
             ConsoleKeyInfo key;
@@ -488,6 +505,8 @@ namespace Wagon_Tracker_Combined
             List<string> rightBoxOutput = new List<string>();
             List<int> availableOptions = new List<int>();
             List<int> selectedOptions = new List<int>();
+
+            double wagonDownloadTime = Convert.ToDouble(File.ReadAllText("dl_time.txt"));
 
             for(int i = 0; i < options.Count; i++)
             {
@@ -500,14 +519,32 @@ namespace Wagon_Tracker_Combined
             {
                 for (int i = 0; i < options.Count; i++)
                 {
-                    leftBoxOutput.Add("  " + options[i]);
+                    if (showPredictor)
+                    {
+                        leftBoxOutput.Add(string.Format("  {0} ({1})", options[i].PadRight(4), optionsCount[i]));
+
+                        screen.Update(string.Format("Estimated download time: {0}s", downloadTime).ToCharArray(), 3, 3);
+                    }
+                    else
+                    {
+                        leftBoxOutput.Add(string.Format("  {0}", options[i]));
+                    }
                 }
             }
             else
             {
                 for (int i = 0; i < leftBox.Height; i++)
                 {
-                    leftBoxOutput.Add("  " + options[i + leftScrollPosition]);
+                    if (showPredictor)
+                    {
+                        leftBoxOutput.Add(string.Format("  {0} ({1})", options[i + leftScrollPosition].PadRight(4), optionsCount[i + leftScrollPosition]));
+
+                        screen.Update(string.Format("Estimated download time: {0}s     ", downloadTime).ToCharArray(), 3, 3);
+                    }
+                    else
+                    {
+                        leftBoxOutput.Add(string.Format("  {0}", options[i + leftScrollPosition]));
+                    }
                 }
             }
 
@@ -749,20 +786,56 @@ namespace Wagon_Tracker_Combined
                 leftBoxOutput = new List<string>();
                 rightBoxOutput = new List<string>();
 
+                if (showPredictor)
+                {
+                    int totalWagons = 0;
+
+                    foreach(int i in selectedOptions)
+                    {
+                        totalWagons += optionsCount[i];
+                    }
+
+                    downloadTime = (int)Math.Ceiling(totalWagons * wagonDownloadTime / 1000);
+
+                    screen.Update(string.Format("Estimated download time: {0}s     ", downloadTime).ToCharArray(), 3, 3);
+                }
+
                 // ********** Left Box **********
                 // Only write the number of lines that fit inside the textbox
                 if (availableOptions.Count < leftBox.Height)
                 {
                     for (int i = 0; i < availableOptions.Count; i++)
                     {
-                        leftBoxOutput.Add("  " + options[availableOptions[i]]);
+                        if (showPredictor)
+                        {
+                            leftBoxOutput.Add(string.Format("  {0} ({1})", options[availableOptions[i]].PadRight(4), optionsCount[availableOptions[i]]));
+
+                            //screen.Update(string.Format("Estimated download time: {0}s     ", downloadTime).ToCharArray(), 3, 3);
+                        }
+                        else
+                        {
+                            leftBoxOutput.Add(string.Format("  {0}", options[availableOptions[i]]));
+                        }
+
+                        //leftBoxOutput.Add("  " + options[availableOptions[i]]);
                     }
                 }
                 else
                 {
                     for (int i = 0; i < leftBox.Height; i++)
                     {
-                        leftBoxOutput.Add("  " + options[availableOptions[i + leftScrollPosition]]);
+                        if (showPredictor)
+                        {
+                            leftBoxOutput.Add(string.Format("  {0} ({1})", options[availableOptions[i + leftScrollPosition]].PadRight(4), optionsCount[availableOptions[i + leftScrollPosition]]));
+
+                            //screen.Update(string.Format("Estimated download time: {0}s     ", downloadTime).ToCharArray(), 3, 3);
+                        }
+                        else
+                        {
+                            leftBoxOutput.Add(string.Format("  {0}", options[availableOptions[i + leftScrollPosition]]));
+                        }
+
+                        //leftBoxOutput.Add("  " + options[availableOptions[i + leftScrollPosition]]);
                     }
                 }
 
@@ -772,14 +845,32 @@ namespace Wagon_Tracker_Combined
                 {
                     for (int i = 0; i < selectedOptions.Count; i++)
                     {
-                        rightBoxOutput.Add("  " + options[selectedOptions[i]]);
+                        if (showPredictor)
+                        {
+                            rightBoxOutput.Add(string.Format("  {0} ({1})", options[selectedOptions[i]].PadRight(4), optionsCount[selectedOptions[i]]));
+                        }
+                        else
+                        {
+                            rightBoxOutput.Add(string.Format("  {0}", options[selectedOptions[i]]));
+                        }
+
+                        //rightBoxOutput.Add("  " + options[selectedOptions[i]]);
                     }
                 }
                 else
                 {
                     for (int i = 0; i < rightBox.Height; i++)
                     {
-                        rightBoxOutput.Add("  " + options[selectedOptions[i + rightScrollPosition]]);
+                        if (showPredictor)
+                        {
+                            rightBoxOutput.Add(string.Format("  {0} ({1})", options[selectedOptions[i + rightScrollPosition]].PadRight(4), optionsCount[selectedOptions[i + rightScrollPosition]]));
+                        }
+                        else
+                        {
+                            rightBoxOutput.Add(string.Format("  {0}", options[selectedOptions[i + rightScrollPosition]]));
+                        }
+
+                        //rightBoxOutput.Add("  " + options[selectedOptions[i + rightScrollPosition]]);
                     }
                 }
 

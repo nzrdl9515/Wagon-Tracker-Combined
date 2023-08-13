@@ -117,9 +117,10 @@ namespace Wagon_Tracker_Combined
 
         public Search Choose(ref Screen screen)
         {
-            Textbox optionsBox = new Textbox(20, 5, 5, 3);
+            Textbox optionsBox = new Textbox(40, 10, 5, 3);
 
             List<string> searchNames = new List<string>(searches.Keys);
+            searchNames.Sort();
 
             return searches[searchNames[Program.selectFromList(ref screen, ref optionsBox, searchNames, 0, new List<ConsoleKey>())]];
         }

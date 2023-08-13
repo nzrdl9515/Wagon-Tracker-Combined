@@ -13,9 +13,16 @@ namespace Wagon_Tracker_Combined
         public static void RunManual(ref Screen screen, ref Searches searches)
         {
             Textbox keywordBox = new Textbox(20, 5, 5, 3);
-            Textbox rightBox = new Textbox(10, 30, 20, 3);
-            Textbox leftBox = new Textbox(10, 30, 5, 3);
+            Textbox rightBox = new Textbox(15, 30, 25, 5);
+            Textbox leftBox = new Textbox(15, 30, 5, 5);
             string[] wagonClasses = File.ReadAllLines("wagon_classes.txt");
+
+            List<int> wagonClassesCount = new List<int>();
+
+            foreach(string wagon in wagonClasses)
+            {
+                wagonClassesCount.Add(File.ReadAllLines("wagons/" + wagon + ".txt").Length);
+            }
 
             screen.Clear();
             screen.Update("Select wagons".ToCharArray(), 3, 1);
@@ -23,7 +30,7 @@ namespace Wagon_Tracker_Combined
 
             while(selectedOptions.Count == 0 || selectedOptions[0] == "escape")
             {
-                selectedOptions = Program.selectMultipleFromList(ref screen, ref leftBox, ref rightBox, new List<string>(wagonClasses));
+                selectedOptions = Program.selectMultipleFromList(ref screen, ref leftBox, ref rightBox, new List<string>(wagonClasses), wagonClassesCount);
             }
 
             screen.Clear();
@@ -70,7 +77,7 @@ namespace Wagon_Tracker_Combined
 
             screen.Clear();
 
-            Textbox displayBox = new Textbox(screen.Width - 8/*50*/, screen.Height - 6, 5, 4); // - 50 used when creating output for the instruction manual.
+            Textbox displayBox = new Textbox(screen.Width - 10/*50*/, screen.Height - 5, 5, 3); // - 50 used when creating output for the instruction manual.
 
             data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
 
