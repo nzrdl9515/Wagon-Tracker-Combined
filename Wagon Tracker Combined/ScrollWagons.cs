@@ -16,7 +16,7 @@ namespace Wagon_Tracker_Combined
             bool showUniqueByAction = true;
             ConsoleKeyInfo key;
 
-            Textbox box = new Textbox(screen.Width - /*10*/40, screen.Height - 5, 5, 3);
+            Textbox box = new Textbox(screen.Width - 10, screen.Height - 5, 5, 3);
             List<string> boxOutput = new List<string>();
 
             List<WagonEntry> entries = data.GetUniqueEntriesByAction(wagonIndex);

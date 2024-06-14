@@ -118,7 +118,7 @@ namespace Wagon_Tracker_Combined
                         wagonError = "";
                     }*/
 
-                    if (line.IndexOf("500") != -1 || line.IndexOf("Unable") != -1 || line.IndexOf("timed out") != -1 || line.IndexOf("code\":-1") != -1 || line.IndexOf("error occurred") != -1)
+                    if (line.IndexOf("500") != -1 || line.IndexOf("Unable") != -1 || line.IndexOf("timed out") != -1 || line.IndexOf("code\":-1") != -1 || line.IndexOf("error") != -1)
                     {
                         // An error line has been encountered
                         errorIndices.Add(c);
