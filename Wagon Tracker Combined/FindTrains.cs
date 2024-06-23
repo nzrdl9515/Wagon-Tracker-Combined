@@ -104,7 +104,7 @@ namespace Wagon_Tracker_Combined
             {
                 screen.Clear();
                 screen.Update("Choose function".ToCharArray(), 3, 1);
-                option = Program.selectFromList(ref screen, ref optionBox, new List<string> { "Browse trains", "Search by location" }, 0, new List<ConsoleKey>());
+                option = Program.selectFromList(ref screen, ref optionBox, new List<string> { "Browse trains", "Search by location" }, 0, new List<ConsoleKey>() { ConsoleKey.Escape } );
 
                 /*if(option == -1)
                 {
@@ -481,7 +481,7 @@ namespace Wagon_Tracker_Combined
                         break;
 
                     case 2:
-
+                        option = -1;
                         break;
                 }
             }

@@ -6,6 +6,7 @@ using System.Linq;
 using System.Net;
 using System.Collections;
 using System.Diagnostics;
+using static System.Runtime.InteropServices.JavaScript.JSType;
 
 namespace Wagon_Tracker_Combined
 {
@@ -71,7 +72,8 @@ namespace Wagon_Tracker_Combined
 
             // Use this if the task needs to be awaited (but I don't think it does)
             // Task downloadTask = downloadConstantly();
-            _ = downloadConstantly();
+            //_ = downloadConstantly();
+            _ = searchForTrains();
 
             while (option != -1)
             {
@@ -290,6 +292,115 @@ namespace Wagon_Tracker_Combined
             }
         }
 
+        static async Task searchForTrains()
+        {
+            DateTime randomLast = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute, DateTime.Now.Second, 0);
+            DateTime trainLast = new DateTime(DateTime.Now.Year, DateTime.Now.Month, DateTime.Now.Day, DateTime.Now.Hour, DateTime.Now.Minute - (DateTime.Now.Minute % 5), 0, 0);
+            string[] wagonClasses = { "IAB", "IC", "IH", "IK", "IKR", "IL", "IM", "TSF", "ZHC", "ZK", "ZWT", "ZXF" };
+            List<string> wagons = new List<string>();
+            //const int n = 100;
+            Random rnd = new Random();
+            Dictionary<(string train, string destination), string> trains = new Dictionary<(string train, string destination), string>();
+
+            foreach(string wagonClass in wagonClasses)
+            {
+                string[] wagonsInFile = File.ReadAllLines("wagons\\" + wagonClass + ".txt");
+                foreach(string wagon in wagonsInFile)
+                {
+                    wagons.Add(wagon);
+                }
+            }
+
+            // Use this to reset the wagon data file
+            /*File.Delete("all wagons data.txt");
+            File.WriteAllLines("all wagons data.txt", wagons);/**/
+
+            List<string> wagonsTempList = new List<string>(wagons);
+
+            //List<string> trainsIdentified = new List<string>();
+
+            /*foreach (string line in downloadData.Values)
+            {
+                int start;
+                if ((start = line.IndexOf("On train ")) != -1)
+                {
+                    int end = line.IndexOf("20 ", start + 9);
+                    string train = line.Substring(start + 9, end - start - 9);
+
+                    if (!trainsIdentified.Contains(train))
+                    {
+                        trainsIdentified.Add(train);
+                    }
+                }
+            }*/
+
+            await Task.Run(() =>
+            {
+                while (true)
+                {
+                    // Download a new random wagon every second to search for new trains
+                    if (DateTime.Now > randomLast.AddSeconds(1.0d))
+                    {
+                        randomLast = randomLast.AddSeconds(1);
+
+                        string randomWagon = wagonsTempList[rnd.Next(wagonsTempList.Count)];
+                        wagonsTempList.Remove(randomWagon);
+
+                        if(wagonsTempList.Count == 0)
+                        {
+                            wagonsTempList = new List<string>(wagons);
+                        }
+
+                        string line = DownloadWagons.Download(randomWagon);
+                        //Debug.WriteLine(randomWagon + " -  " + line);
+
+                        string[] dataFile = File.ReadAllLines("all wagons data.txt");
+                        string newLine = randomWagon + " - " + DateTime.Now.ToString("g") + " - " + line;
+                        int fileIndex = wagons.IndexOf(randomWagon);
+
+                        if(newLine != dataFile[fileIndex])
+                        {
+                            dataFile[fileIndex] = newLine;
+                            File.WriteAllLines("all wagons data.txt", dataFile);
+                        }
+
+                        int start;
+                        if ((start = line.IndexOf("On train ")) != -1)
+                        {
+                            int end = line.IndexOf("20 ", start + 9);
+                            string train = line.Substring(start + 9, end - start - 9);
+
+                            start = line.IndexOf("due at ");
+                            end = line.IndexOf(' ', start + 7);
+                            string destination = line.Substring(start + 7, end - start - 7);
+
+                            if(!trains.ContainsKey((train, destination)))
+                            {
+                                trains.Add((train, destination), randomWagon);
+                            }
+                        }
+                    }
+
+                    // Update the wagons on trains every 5 minutes
+                    if (DateTime.Now > trainLast.AddMinutes(5.0d))
+                    {
+                        trainLast = trainLast.AddMinutes(5);
+
+                        SortedList<string, string> newData = new SortedList<string, string>(new StringLogicalComparer());
+
+                        DownloadWagons.Download(new List<string>(trains.Values), ref newData);
+
+                        foreach(KeyValuePair<string, string> line in newData)
+                        {
+                            File.AppendAllText("constant train search.txt", line.Key + " - " + line.Value + '\n');
+                        }
+                    }
+
+                    System.Threading.Thread.Sleep(200);
+                }
+            });
+        }
+
         static async Task downloadConstantly()
         {
             Instruction lastInstruction = DownloadInstructions[0];
@@ -321,161 +432,161 @@ namespace Wagon_Tracker_Combined
 
             await Task.Run(() =>
             {
-            while (true)
-            {
-                if (DownloadInstructions.Last() != lastInstruction)
+                while (true)
                 {
-                    for (int i = DownloadInstructions.IndexOf(lastInstruction) + 1; i < DownloadInstructions.Count(); i++)
+                    if (DownloadInstructions.Last() != lastInstruction)
                     {
-                        // ****************************************************
-                        // *************** PERFORM INSTRUCTIONS ***************
-                        // ****************************************************
-
-                        int index = DownloadInstructions[i].Command.IndexOf(" ");
-
-                        if (index == -1)
+                        for (int i = DownloadInstructions.IndexOf(lastInstruction) + 1; i < DownloadInstructions.Count(); i++)
                         {
-                            index = DownloadInstructions[i].Command.Length;
+                            // ****************************************************
+                            // *************** PERFORM INSTRUCTIONS ***************
+                            // ****************************************************
+
+                            int index = DownloadInstructions[i].Command.IndexOf(" ");
+
+                            if (index == -1)
+                            {
+                                index = DownloadInstructions[i].Command.Length;
+                            }
+
+                            switch (DownloadInstructions[i].Command.Substring(0, index))
+                            {
+                                case "addwagon":
+
+                                    string wagon = DownloadInstructions[i].Command.Substring(index + 1);
+
+                                    if (!data.ContainsKey(wagon))
+                                    {
+                                        data.Add(wagon, "");
+                                    }
+
+                                    File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
+
+                                    break;
+
+                                case "removewagon":
+
+                                    wagon = DownloadInstructions[i].Command.Substring(index + 1);
+
+                                    if (data.ContainsKey(wagon))
+                                    {
+                                        data.Remove(wagon);
+                                    }
+
+                                    File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
+
+                                    break;
+
+                                /*case "viewwagons":
+
+                                    string wagonList = data.Keys[0];
+
+                                    for(int j = 1; j < data.Count; j++)
+                                    {
+                                        wagonList += (',' + data.Keys[j]);
+                                    }
+
+                                    DownloadInstructions.Add(new Instruction(wagonList));
+
+                                    break;*/
+
+                                default:
+
+                                    break;
+                            }
                         }
 
-                        switch (DownloadInstructions[i].Command.Substring(0, index))
-                        {
-                            case "addwagon":
-
-                                string wagon = DownloadInstructions[i].Command.Substring(index + 1);
-
-                                if (!data.ContainsKey(wagon))
-                                {
-                                    data.Add(wagon, "");
-                                }
-
-                                File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
-
-                                break;
-
-                            case "removewagon":
-
-                                wagon = DownloadInstructions[i].Command.Substring(index + 1);
-
-                                if (data.ContainsKey(wagon))
-                                {
-                                    data.Remove(wagon);
-                                }
-
-                                File.WriteAllLines("continuous_download_wagons.txt", data.Keys);
-
-                                break;
-
-                            /*case "viewwagons":
-
-                                string wagonList = data.Keys[0];
-
-                                for(int j = 1; j < data.Count; j++)
-                                {
-                                    wagonList += (',' + data.Keys[j]);
-                                }
-
-                                DownloadInstructions.Add(new Instruction(wagonList));
-
-                                break;*/
-
-                            default:
-
-                                break;
-                        }
+                        lastInstruction = DownloadInstructions.Last();
                     }
 
-                    lastInstruction = DownloadInstructions.Last();
-                }
-
-                if (DateTime.Now > last.AddMinutes(5.0d))
-                {
-                    last = last.AddMinutes(5);
-                    //allData = new List<string>();
-
-                    SortedList<string, string> newData = new SortedList<string, string>(new StringLogicalComparer());
-
-                    Stopwatch sw = Stopwatch.StartNew();
-
-                    DownloadWagons.Download(new List<string>(data.Keys), ref newData);
-
-                    sw.Stop();
-
-                    File.WriteAllText("dl_time.txt", ((double)sw.ElapsedMilliseconds / (double)data.Count).ToString());
-
-                    List<string> dataToAppend = new List<string>();
-
-                    for(int i = 0; i < newData.Count; i++)
+                    if (DateTime.Now > last.AddMinutes(5.0d))
                     {
-                        if(newData[newData.Keys[i]] != data[newData.Keys[i]])
-                        {
-                            data[newData.Keys[i]] = newData[newData.Keys[i]];
+                        last = last.AddMinutes(5);
+                        //allData = new List<string>();
 
-                            dataToAppend.Add(newData.Keys[i] + " - " + DateTime.Now.ToString("g") + " - " + newData[newData.Keys[i]]);
+                        SortedList<string, string> newData = new SortedList<string, string>(new StringLogicalComparer());
+
+                        Stopwatch sw = Stopwatch.StartNew();
+
+                        DownloadWagons.Download(new List<string>(data.Keys), ref newData);
+
+                        sw.Stop();
+
+                        File.WriteAllText("dl_time.txt", ((double)sw.ElapsedMilliseconds / (double)data.Count).ToString());
+
+                        List<string> dataToAppend = new List<string>();
+
+                        for(int i = 0; i < newData.Count; i++)
+                        {
+                            if(newData[newData.Keys[i]] != data[newData.Keys[i]])
+                            {
+                                data[newData.Keys[i]] = newData[newData.Keys[i]];
+
+                                dataToAppend.Add(newData.Keys[i] + " - " + DateTime.Now.ToString("g") + " - " + newData[newData.Keys[i]]);
+                            }
                         }
-                    }
 
-                    /*for (int i = 0; i < wagons.Count; i++)
-                    {
-                        string downloadString;
-
-                        try
+                        /*for (int i = 0; i < wagons.Count; i++)
                         {
-                            downloadString = client.DownloadString("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagons[i]);
-                        }
-                        catch (Exception e)
-                        {
-                            downloadString = e.Message;
-                        }
+                            string downloadString;
 
-                        string fileLine = wagons[i] + " - " + DateTime.Now.ToString("g") + " - " + downloadString;
+                            try
+                            {
+                                downloadString = client.DownloadString("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagons[i]);
+                            }
+                            catch (Exception e)
+                            {
+                                downloadString = e.Message;
+                            }
 
-                        if (downloadString != lastData[wagons[i]])
-                        {
-                            lastData[wagons[i]] = downloadString;
+                            string fileLine = wagons[i] + " - " + DateTime.Now.ToString("g") + " - " + downloadString;
+
+                            if (downloadString != lastData[wagons[i]])
+                            {
+                                lastData[wagons[i]] = downloadString;
                                 
-                            allData.Add(fileLine);
-                        }
-                    }*/
+                                allData.Add(fileLine);
+                            }
+                        }*/
 
-                    // To save the file
-                    if (!FileLocked)
-                    {
-                        FileInUse = true;
-
-                        File.AppendAllLines("data.txt", dataToAppend);
-
-                        FileInUse = false;
-                    }
-                    else
-                    {
-                        while (FileLocked)
+                        // To save the file
+                        if (!FileLocked)
                         {
-                            System.Threading.Thread.Sleep(500);
+                            FileInUse = true;
+
+                            File.AppendAllLines("data.txt", dataToAppend);
+
+                            FileInUse = false;
                         }
-
-                        FileInUse = true;
-
-                        File.AppendAllLines("data.txt", dataToAppend);
-
-                        FileInUse = false;
-                    }
-                }
-
-                // Remove instructions that are more than 10 minutes old, but making sure the instruction list is NOT empty
-                // ****************************************************************************** AddMinutes(10) ***********
-                if (DownloadInstructions.Count > 1 && DateTime.Now > DownloadInstructions[0].Time.AddMinutes(10)) // *******
-                {
-                    for (int i = DownloadInstructions.Count - 2; i >=0 ; i--)
-                    {
-                        if (DateTime.Now > DownloadInstructions[i].Time.AddSeconds(5))
+                        else
                         {
-                            DownloadInstructions.RemoveAt(i);
+                            while (FileLocked)
+                            {
+                                System.Threading.Thread.Sleep(500);
+                            }
+
+                            FileInUse = true;
+
+                            File.AppendAllLines("data.txt", dataToAppend);
+
+                            FileInUse = false;
                         }
                     }
-                }
 
-                System.Threading.Thread.Sleep(500);
+                    // Remove instructions that are more than 10 minutes old, but making sure the instruction list is NOT empty
+                    // ****************************************************************************** AddMinutes(10) ***********
+                    if (DownloadInstructions.Count > 1 && DateTime.Now > DownloadInstructions[0].Time.AddMinutes(10)) // *******
+                    {
+                        for (int i = DownloadInstructions.Count - 2; i >=0 ; i--)
+                        {
+                            if (DateTime.Now > DownloadInstructions[i].Time.AddSeconds(5))
+                            {
+                                DownloadInstructions.RemoveAt(i);
+                            }
+                        }
+                    }
+
+                    System.Threading.Thread.Sleep(500);
                 }
             });
         }

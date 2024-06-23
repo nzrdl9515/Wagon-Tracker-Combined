@@ -35,9 +35,9 @@ namespace Wagon_Tracker_Combined
 
             screen.Clear();
 
-            string keyword = keywordBox.GetKeyboardInput("Input search parameter", ref screen, true);
+            string keyword = "";// keywordBox.GetKeyboardInput("Input search parameter", ref screen, true);
 
-            screen.Clear();
+            //screen.Clear();
 
             run(selectedOptions, keyword, ref screen, ref searches);
         }
@@ -80,6 +80,47 @@ namespace Wagon_Tracker_Combined
             Textbox displayBox = new Textbox(screen.Width - 10/*50*/, screen.Height - 5, 5, 3); // - 50 used when creating output for the instruction manual.
 
             data = getDisplayData(keyword, ref allWagonsData, wagonClasses.Count);
+
+            // ***** BEGIN - Remove wagons with no data from the saved files *****
+            List<string> wagonsToRemove = new List<string>();
+            string wagonClassForRemoval = data[0].Split(' ')[1];
+            int c = 1;
+
+            while(c < data.Count)
+            {
+                if (data[c].Contains("\"\"}"))
+                {
+                    // List wagons to be removed and note them down for future reference just in case
+                    wagonsToRemove.Add(data[c].Split(" ")[0]);
+                    File.AppendAllText("Deleted Wagons.txt", wagonsToRemove.Last() + '\n');
+
+                    // Remove wagons with no data from the display data
+                    data.RemoveAt(c);
+                    c--;
+                }
+
+                // If encountering a new class, update the list of wagons for the previous class
+                if (data[c].Contains("Class") || c == data.Count - 1)
+                {
+                    if (wagonsToRemove.Count > 0)
+                    {
+                        List<string> wagonsInClass = new List<string>(File.ReadAllLines("wagons/" + wagonClassForRemoval + ".txt"));
+                        foreach (string wagonToRemove in wagonsToRemove)
+                        {
+                            wagonsInClass.Remove(wagonToRemove);
+                        }
+
+                        File.Delete("wagons/" + wagonClassForRemoval + ".txt");
+                        File.AppendAllLines("wagons/" + wagonClassForRemoval + ".txt", wagonsInClass);
+                    }
+
+                    wagonsToRemove = new List<string>();
+                    wagonClassForRemoval = data[c].Split(' ')[1];
+                }
+
+                c++;
+            }
+            // ***** END *********************************************************
 
             boxOutput = new List<string>();
 
@@ -138,8 +179,9 @@ namespace Wagon_Tracker_Combined
 
                         break;
 
+                    // ************************ Filter search results ************************
                     case ConsoleKey.F:
-                    case ConsoleKey.G:
+                    case ConsoleKey.G: // ************************ Filter search results ************************
                         if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
                         {
                             keyword = keywordBox.GetKeyboardInput("Input new search parameter", ref screen, true);
@@ -153,8 +195,9 @@ namespace Wagon_Tracker_Combined
                         }
                         break;
 
-                    case ConsoleKey.D:
-                        if(key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
+                    // ************************ Add wagons to continuous download ************************
+                    case ConsoleKey.D: // ************************ Add wagons to continuous download ************************
+                        if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
                         {
                             screen.Clear();
 
@@ -183,7 +226,8 @@ namespace Wagon_Tracker_Combined
                         }
                         break;
 
-                    case ConsoleKey.R:
+                    // ************************ Refresh data ************************
+                    case ConsoleKey.R: // ************************ Refresh data ************************
                         if (key.Modifiers == ConsoleModifiers.Control && !inUniqueTrains)
                         {
                             // Download all wagons again
@@ -230,6 +274,7 @@ namespace Wagon_Tracker_Combined
                         }
                         break;
 
+                    // ************************ Save search ************************
                     case ConsoleKey.S: // ************************ Save search ************************
                         if (key.Modifiers == ConsoleModifiers.Control)
                         {
@@ -286,6 +331,7 @@ namespace Wagon_Tracker_Combined
                         }
                         break;
 
+                    // ************************ Search for all the unique trains in the data ************************
                     case ConsoleKey.T: // Search for all the unique trains in the data
                         if (key.Modifiers == ConsoleModifiers.Control)
                         {
@@ -325,6 +371,34 @@ namespace Wagon_Tracker_Combined
                             }
                         }
 
+                        break;
+
+                    // ************************ Write search results to file ************************
+                    case ConsoleKey.P: // ************************ Write search results to file ************************
+                        if (key.Modifiers == ConsoleModifiers.Control)
+                        {
+                            string fileName = string.Format("Download result {0}.txt", DateTime.Now.ToString("MM-dd-yyyy HH-mm-ss"));
+
+                            foreach(string line in data)
+                            {
+                                if (!line.Contains("Class"))
+                                {
+                                    File.AppendAllText(fileName, line + '\n');
+                                }
+                            }
+
+                            screen.Clear();
+
+                            screen.Update("Search results saved to file".ToCharArray(), 3, 1);
+                            screen.Update("Press [ENTER] to continue...".ToCharArray(), 3, 3);
+
+                            while(Console.ReadKey(true).Key != ConsoleKey.Enter)
+                            {
+
+                            }
+
+                            screen.Clear();
+                        }
                         break;
 
                     default:
@@ -491,6 +565,20 @@ namespace Wagon_Tracker_Combined
             }
 
             sw.Stop();
+        }
+
+        public static string Download (string wagon)
+        {
+            WebClient cl = new WebClient();
+
+            try
+            {
+                return cl.DownloadString(new Uri("https://www.kiwirailfreight.co.nz/tc/api/location/current/" + wagon));
+            }
+            catch
+            {
+                return wagon + " download error";
+            }
         }
 
         public static void Download(List<string> wagons, ref SortedList<string, string> allWagonsData)
